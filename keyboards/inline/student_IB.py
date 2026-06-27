@@ -3,8 +3,8 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 lang = InlineKeyboardMarkup(
     inline_keyboard=[
         [
-            InlineKeyboardButton(text='O\'zbekcha🇺🇿', callback_data="lang:uz"),
-            InlineKeyboardButton(text='По-русски🇷🇺', callback_data="lang:ru")
+            InlineKeyboardButton(text="O'zbekcha🇺🇿", callback_data="lang:uz"),
+            InlineKeyboardButton(text="По-русски🇷🇺", callback_data="lang:ru")
         ]
     ]
 )
@@ -12,10 +12,11 @@ lang = InlineKeyboardMarkup(
 confirmation_uz = InlineKeyboardMarkup(
     inline_keyboard=[
         [
-            InlineKeyboardButton(text="Tasdiqlash✅", callback_data='conf')
+            InlineKeyboardButton(text="✅ Tasdiqlash", callback_data='conf')
         ],
         [
-            InlineKeyboardButton(text='Qayta yozish✍️', callback_data='again')
+            InlineKeyboardButton(text="✏️ Tahrirlash", callback_data='again'),
+            InlineKeyboardButton(text="❌ Bekor qilish", callback_data='cancel')
         ]
     ]
 )
@@ -23,11 +24,11 @@ confirmation_uz = InlineKeyboardMarkup(
 confirmation_ru = InlineKeyboardMarkup(
     inline_keyboard=[
         [
-            InlineKeyboardButton(text='Подтвердить✅', callback_data='conf')
+            InlineKeyboardButton(text="✅ Подтвердить", callback_data='conf')
         ],
         [
-            InlineKeyboardButton(text='Переписать✍️', callback_data='again')
+            InlineKeyboardButton(text="✏️ Редактировать", callback_data='again'),
+            InlineKeyboardButton(text="❌ Отмена", callback_data='cancel')
         ]
-
     ]
 )
