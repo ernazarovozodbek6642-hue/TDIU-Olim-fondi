@@ -4,9 +4,16 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-aiogram = "~=2.14"
+aiogram = "==2.25.2"
+aiohttp = "==3.8.6"
+asyncpg = "==0.30.0"
 environs = "*"
-asyncpg = "*"
+python-dotenv = "*"
+pytz = "*"
+python-docx = "*"
+gspread = "==6.1.4"
+google-auth = "==2.38.0"
+google-auth-oauthlib = "==1.2.1"
 
 [dev-packages]
 
