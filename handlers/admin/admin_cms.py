@@ -146,7 +146,7 @@ async def cms_main(call: CallbackQuery, state: FSMContext):
     if str(call.from_user.id) not in ADMINS:
         return
     await state.finish()
-    sections = await db.get_top_sections()
+    sections = await db.get_top_sections(admin=True)
     await safe_edit(
         call,
         "📝 <b>Bo'limlarni boshqarish</b>\n\nTop-level bo'limlar:",
@@ -165,7 +165,7 @@ async def cms_open(call: CallbackQuery, state: FSMContext):
         await call.answer("Bo'lim topilmadi", show_alert=True)
         return
 
-    children = await db.get_children(key)
+    children = await db.get_children(admin=True, parent_key=key)
 
     if children:
         # Sub-bo'limlari bor → ularni ko'rsat
@@ -214,7 +214,7 @@ async def cms_move_up(call: CallbackQuery, state: FSMContext):
     section = await db.get_section(key)
     if not section:
         return
-    siblings = await db.get_children(section['parent_key'])
+    siblings = await db.get_children(admin=True, parent_key=section['parent_key'])
     idx = next((i for i, s in enumerate(siblings) if s['section_key'] == key), None)
     if idx and idx > 0:
         await db.swap_section_order(key, siblings[idx - 1]['section_key'])
@@ -231,7 +231,7 @@ async def cms_move_down(call: CallbackQuery, state: FSMContext):
     section = await db.get_section(key)
     if not section:
         return
-    siblings = await db.get_children(section['parent_key'])
+    siblings = await db.get_children(admin=True, parent_key=section['parent_key'])
     idx = next((i for i, s in enumerate(siblings) if s['section_key'] == key), None)
     if idx is not None and idx < len(siblings) - 1:
         await db.swap_section_order(key, siblings[idx + 1]['section_key'])
@@ -242,14 +242,14 @@ async def cms_move_down(call: CallbackQuery, state: FSMContext):
 async def _refresh_parent(call: CallbackQuery, state: FSMContext, parent_key):
     if parent_key:
         parent = await db.get_section(parent_key)
-        children = await db.get_children(parent_key)
+        children = await db.get_children(admin=True, parent_key=parent_key)
         kb = cms_section_kb(parent, children)
         kb.inline_keyboard.insert(-1, [
             InlineKeyboardButton("⚙️ Bu bo'limni tahrirlash", callback_data=f"cms:detail:{parent_key}")
         ])
         await call.message.edit_reply_markup(reply_markup=kb)
     else:
-        sections = await db.get_top_sections()
+        sections = await db.get_top_sections(admin=True)
         await call.message.edit_reply_markup(reply_markup=cms_main_kb(sections))
 
 
@@ -280,6 +280,10 @@ async def cms_delete_confirm(call: CallbackQuery, state: FSMContext):
     if str(call.from_user.id) not in ADMINS:
         return
     key = call.data.split("cms:delete:")[1]
+    # Xizmat bo'limlarini o'chirib bo'lmaydi
+    if key.startswith("svc:"):
+        await call.answer("⛔ Bu tizim bo'limi — o'chirib bo'lmaydi. Faqat faol/nofaol qilish mumkin.", show_alert=True)
+        return
     section = await db.get_section(key)
     await safe_edit(call,
         f"⚠️ <b>O'chirishni tasdiqlang</b>\n\n"
@@ -303,20 +307,20 @@ async def cms_delete_execute(call: CallbackQuery, state: FSMContext):
     if parent_key:
         parent = await db.get_section(parent_key)
         if parent:
-            children = await db.get_children(parent_key)
+            children = await db.get_children(admin=True, parent_key=parent_key)
             kb = cms_section_kb(parent, children)
             await safe_edit(call,
                 f"📂 <b>{parent['title_uz']}</b>\n\nSub-bo'limlar: {len(children)} ta",
                 reply_markup=kb, parse_mode='HTML'
             )
         else:
-            sections = await db.get_top_sections()
+            sections = await db.get_top_sections(admin=True)
             await safe_edit(call,
                 "📝 <b>Bo'limlarni boshqarish</b>",
                 reply_markup=cms_main_kb(sections), parse_mode='HTML'
             )
     else:
-        sections = await db.get_top_sections()
+        sections = await db.get_top_sections(admin=True)
         await safe_edit(call,
             "📝 <b>Bo'limlarni boshqarish</b>",
             reply_markup=cms_main_kb(sections), parse_mode='HTML'
@@ -530,7 +534,7 @@ async def cms_add_image(msg: Message, state: FSMContext):
 
     # Tartib raqami: oxirgi + 1
     parent = data.get('new_parent')
-    siblings = await db.get_children(parent) if parent else await db.get_top_sections()
+    siblings = await db.get_children(admin=True, parent_key=parent) if parent else await db.get_top_sections(admin=True)
     order = (max((s['order_num'] for s in siblings), default=0) + 1)
 
     result = await db.add_section(

@@ -19,6 +19,7 @@ async def on_startup(dispatcher):
     await db.create_table_arizalar()
     await db.create_table_sections()
     await db.seed_sections_if_empty()
+    await db.ensure_service_sections()
 
     await on_startup_notify(dispatcher)
 

@@ -1,50 +1,95 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
-# ─── Yagona UZ menyu (hammaga bir xil) ───
+
+async def build_main_kb_uz(db, registered: bool = True) -> ReplyKeyboardMarkup:
+    """
+    Asosiy UZ menyu — svc:* bo'limlari aktiv/nofaol holatiga qarab quriladi.
+    """
+    show_hujjat   = await db.is_service_active('svc:hujjat')
+    show_ariza    = await db.is_service_active('svc:ariza')
+    show_murojaat = await db.is_service_active('svc:murojaat')
+
+    rows = []
+    # 1-qator: Rahbariyat + Murojaat (murojaat aktiv bo'lsa)
+    row1 = [KeyboardButton(text="👤Rahbariyat")]
+    if show_murojaat:
+        row1.append(KeyboardButton(text="✍️️Murojaat yuborish"))
+    rows.append(row1)
+
+    # 2-qator: Hujjat yuborish + Statistika (hujjat aktiv bo'lsa)
+    row2 = []
+    if show_hujjat:
+        row2.append(KeyboardButton(text="📂Hujjat yuborish"))
+    row2.append(KeyboardButton(text="📊 Statistika"))
+    rows.append(row2)
+
+    # 3-qator: Haqida + Kabinet
+    rows.append([
+        KeyboardButton(text="🏛 Olim fondi haqida"),
+        KeyboardButton(text="🗂 Shaxsiy kabinet")
+    ])
+
+    # 4-qator: Ariza (aktiv bo'lsa)
+    if show_ariza:
+        rows.append([KeyboardButton(text="📬 2026/2027 o'quv yili uchun\nhujjat topshirish")])
+
+    # 5-qator: Til o'zgartirish
+    rows.append([KeyboardButton(text="🇺🇿Tilni o'zgartish🇷🇺")])
+
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+async def build_main_kb_ru(db, registered: bool = True) -> ReplyKeyboardMarkup:
+    """
+    Asosiy RU menyu — svc:* bo'limlari aktiv/nofaol holatiga qarab quriladi.
+    """
+    show_hujjat   = await db.is_service_active('svc:hujjat')
+    show_ariza    = await db.is_service_active('svc:ariza')
+    show_murojaat = await db.is_service_active('svc:murojaat')
+
+    rows = []
+    row1 = [KeyboardButton(text="👤Руководство")]
+    if show_murojaat:
+        row1.append(KeyboardButton(text="✍️Отправить обращение"))
+    rows.append(row1)
+
+    row2 = []
+    if show_hujjat:
+        row2.append(KeyboardButton(text="📂Отправить документ"))
+    row2.append(KeyboardButton(text="📊 Статистика"))
+    rows.append(row2)
+
+    rows.append([
+        KeyboardButton(text="🏛 Об Олим фонде"),
+        KeyboardButton(text="🗂 Личный кабинет")
+    ])
+
+    if show_ariza:
+        rows.append([KeyboardButton(text="📬 Подача документов\n2026/2027 уч. год")])
+
+    rows.append([KeyboardButton(text="🇷🇺Изменить язык🇺🇿")])
+
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+# ─── Statik fallback (db mavjud bo'lmagan holat uchun) ───
 lang_uz_main_m = ReplyKeyboardMarkup(
     keyboard=[
-        [
-            KeyboardButton(text="👤Rahbariyat"),
-            KeyboardButton(text="✍️️Murojaat yuborish")
-        ],
-        [
-            KeyboardButton(text="📂Hujjat yuborish"),
-            KeyboardButton(text="📊 Statistika")
-        ],
-        [
-            KeyboardButton(text="🏛 Olim fondi haqida"),
-            KeyboardButton(text="🗂 Shaxsiy kabinet")
-        ],
-        [
-            KeyboardButton(text="📬 2026/2027 o'quv yili uchun\nhujjat topshirish")
-        ],
-        [
-            KeyboardButton(text="🇺🇿Tilni o'zgartish🇷🇺")
-        ]
+        [KeyboardButton(text="👤Rahbariyat"), KeyboardButton(text="✍️️Murojaat yuborish")],
+        [KeyboardButton(text="📂Hujjat yuborish"), KeyboardButton(text="📊 Statistika")],
+        [KeyboardButton(text="🏛 Olim fondi haqida"), KeyboardButton(text="🗂 Shaxsiy kabinet")],
+        [KeyboardButton(text="📬 2026/2027 o'quv yili uchun\nhujjat topshirish")],
+        [KeyboardButton(text="🇺🇿Tilni o'zgartish🇷🇺")],
     ], resize_keyboard=True
 )
 
-# ─── Yagona RU menyu (hammaga bir xil) ───
 lang_ru_main_m = ReplyKeyboardMarkup(
     keyboard=[
-        [
-            KeyboardButton(text="👤Руководство"),
-            KeyboardButton(text="✍️Отправить обращение")
-        ],
-        [
-            KeyboardButton(text="📂Отправить документ"),
-            KeyboardButton(text="📊 Статистика")
-        ],
-        [
-            KeyboardButton(text="🏛 Об Олим фонде"),
-            KeyboardButton(text="🗂 Личный кабинет")
-        ],
-        [
-            KeyboardButton(text="📬 Подача документов\n2026/2027 уч. год")
-        ],
-        [
-            KeyboardButton(text="🇷🇺Изменить язык🇺🇿")
-        ]
+        [KeyboardButton(text="👤Руководство"), KeyboardButton(text="✍️Отправить обращение")],
+        [KeyboardButton(text="📂Отправить документ"), KeyboardButton(text="📊 Статистика")],
+        [KeyboardButton(text="🏛 Об Олим фонде"), KeyboardButton(text="🗂 Личный кабинет")],
+        [KeyboardButton(text="📬 Подача документов\n2026/2027 уч. год")],
+        [KeyboardButton(text="🇷🇺Изменить язык🇺🇿")],
     ], resize_keyboard=True
 )
 

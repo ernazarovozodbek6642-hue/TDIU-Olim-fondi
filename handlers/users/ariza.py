@@ -14,7 +14,7 @@ from aiogram.types import (
 from data.config import ADMINS
 from loader import dp, db, bot
 from states.states import ArizaStates
-from keyboards.default.Student_DB import lang_uz_main_m, lang_ru_main_m
+from keyboards.default.Student_DB import build_main_kb_uz, build_main_kb_ru
 from utils.misc.ariza_docx import generate_ariza_docx
 
 PHONE_RE = re.compile(r'^\+998\d{9}$')
@@ -186,7 +186,7 @@ async def cancel_form(msg: Message, state: FSMContext):
     await state.finish()
     user = await db.select_user(str(msg.from_user.id))
     lang = user.get('language', 'uz') if user else 'uz'
-    kb = lang_uz_main_m if lang == 'uz' else lang_ru_main_m
+    kb = await (build_main_kb_uz(db) if lang == 'uz' else build_main_kb_ru(db))
     if lang == 'uz':
         await msg.answer("❌ Ariza to'xtatildi.", reply_markup=kb)
     else:
@@ -199,7 +199,7 @@ async def cancel_form_cb(call: CallbackQuery, state: FSMContext):
     await call.answer()
     user = await db.select_user(str(call.from_user.id))
     lang = user.get('language', 'uz') if user else 'uz'
-    kb = lang_uz_main_m if lang == 'uz' else lang_ru_main_m
+    kb = await (build_main_kb_uz(db) if lang == 'uz' else build_main_kb_ru(db))
     if lang == 'uz':
         await call.message.answer("❌ Ariza bekor qilindi.", reply_markup=kb)
     else:
@@ -731,7 +731,7 @@ async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
 
     ariza = await db.add_ariza(user_id=user_id, data=data, created_at=now)
 
-    kb = lang_uz_main_m if lang == 'uz' else lang_ru_main_m
+    kb = await (build_main_kb_uz(db) if lang == 'uz' else build_main_kb_ru(db))
 
     if lang == 'uz':
         await call.message.answer(

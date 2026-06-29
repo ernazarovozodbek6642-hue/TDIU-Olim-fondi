@@ -2,8 +2,12 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, InputMediaPhoto
 
 from data.config import ADMINS
-from keyboards.default.Student_DB import lang_uz_main_m, lang_ru_main_m, unreg_uz_menu, unreg_ru_menu, \
-    uz_management_list, ru_management_list, main_menu_uz, main_menu_ru, back_uz, back_ru
+from keyboards.default.Student_DB import (
+    build_main_kb_uz, build_main_kb_ru,
+    uz_management_list, ru_management_list,
+    main_menu_uz, main_menu_ru, back_uz, back_ru
+)
+from loader import db as _db
 from keyboards.inline.student_IB import confirmation_uz, confirmation_ru
 from loader import bot, db
 from datetime import datetime
@@ -15,13 +19,13 @@ from utils.misc.student_list import get_students_keyboard_ru, get_students_keybo
 
 async def uz_text_1(msg: Message, registered: bool = True):
     text = "Asosiy Menyu\n\nKerakli bo'limni tanlang"
-    kb = lang_uz_main_m if registered else unreg_uz_menu
+    kb = await build_main_kb_uz(_db, registered)
     await msg.answer(text=text, reply_markup=kb)
 
 
 async def ru_text_1(msg: Message, registered: bool = True):
     text = "Главное меню\n\nВыберите нужный раздел"
-    kb = lang_ru_main_m if registered else unreg_ru_menu
+    kb = await build_main_kb_ru(_db, registered)
     await msg.answer(text=text, reply_markup=kb)
 
 

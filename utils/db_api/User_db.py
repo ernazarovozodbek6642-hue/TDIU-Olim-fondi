@@ -809,15 +809,27 @@ Yoshlarning sifatli ta\'lim olishi uchun teng imkoniyatlar yaratish, iqtidorli t
             "SELECT * FROM bot_sections WHERE section_key=$1", section_key, fetchrow=True
         )
 
-    async def get_children(self, parent_key):
-        """parent_key ga tegishli sub-bo'limlarni order_num bo'yicha qaytaradi."""
+    async def get_children(self, parent_key, admin=False):
+        """parent_key ga tegishli sub-bo'limlarni order_num bo'yicha qaytaradi.
+        admin=True bo'lsa yashirilgan bo'limlar ham ko'rsatiladi."""
+        if admin:
+            return await self.execute(
+                "SELECT * FROM bot_sections WHERE parent_key=$1 ORDER BY order_num",
+                parent_key, fetch=True
+            )
         return await self.execute(
             "SELECT * FROM bot_sections WHERE parent_key=$1 AND is_active=TRUE ORDER BY order_num",
             parent_key, fetch=True
         )
 
-    async def get_top_sections(self):
-        """Top-level bo'limlar (parent_key IS NULL)."""
+    async def get_top_sections(self, admin=False):
+        """Top-level bo'limlar (parent_key IS NULL).
+        admin=True bo'lsa yashirilgan bo'limlar ham ko'rsatiladi."""
+        if admin:
+            return await self.execute(
+                "SELECT * FROM bot_sections WHERE parent_key IS NULL ORDER BY order_num",
+                fetch=True
+            )
         return await self.execute(
             "SELECT * FROM bot_sections WHERE parent_key IS NULL AND is_active=TRUE ORDER BY order_num",
             fetch=True
@@ -862,3 +874,34 @@ Yoshlarning sifatli ta\'lim olishi uchun teng imkoniyatlar yaratish, iqtidorli t
             return
         await self.update_section_field(key1, 'order_num', row2['order_num'])
         await self.update_section_field(key2, 'order_num', row1['order_num'])
+
+    async def ensure_service_sections(self):
+        """
+        Xizmat bo'limlari (hujjat yuborish, ariza, murojaat) DBda yo'q bo'lsa qo'shadi.
+        Bu bo'limlar CMS orqali faol/nofaol qilinadi va asosiy menyuga ta'sir qiladi.
+        """
+        services = [
+            ('svc:hujjat',   '📂 Hujjat yuborish',         '📂 Отправить документ',      90),
+            ('svc:ariza',    '📬 Ariza topshirish',          '📬 Подача документов',        91),
+            ('svc:murojaat', '✍️ Murojaat yuborish',         '✍️ Отправить обращение',      92),
+        ]
+        for key, title_uz, title_ru, order in services:
+            existing = await self.get_section(key)
+            if not existing:
+                await self.add_section(
+                    section_key=key,
+                    parent_key=None,
+                    title_uz=title_uz,
+                    title_ru=title_ru,
+                    text_uz='',
+                    text_ru='',
+                    image=None,
+                    order_num=order
+                )
+
+    async def is_service_active(self, key: str) -> bool:
+        """svc:* bo'limi aktiv ekanini tekshiradi. DB da yo'q bo'lsa True qaytaradi."""
+        section = await self.get_section(key)
+        if not section:
+            return True
+        return bool(section['is_active'])
