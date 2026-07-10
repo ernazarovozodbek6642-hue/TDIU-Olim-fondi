@@ -405,6 +405,7 @@ class Database:
             passport_orqa_file_id TEXT,
             cv_file_id TEXT,
             imtiyozi TEXT,
+            oqish_joyi_file_id TEXT,
             motivatsion_xat TEXT,
             rejection_reason TEXT,
             admin_msg_ids TEXT DEFAULT '[]',
@@ -419,7 +420,8 @@ class Database:
             ("passport_oldi_file_id", "TEXT"),
             ("passport_orqa_file_id", "TEXT"),
             ("cv_file_id", "TEXT"),
-            ("imtiyozi", "TEXT")
+            ("imtiyozi", "TEXT"),
+            ("oqish_joyi_file_id", "TEXT")
         ]:
             try:
                 await self.execute(f"ALTER TABLE arizalar ADD COLUMN IF NOT EXISTS {col} {coltype}", execute=True)
@@ -434,7 +436,7 @@ class Database:
             ilmiy_tadqiqot, tadqiqot_info, konferensiya, maqola,
             oldin_grant, grant_info, kontrakt_sum,
             oila_soni, ota_info, ona_info, aka_opa_info,
-            transkript_file_id, passport_oldi_file_id, passport_orqa_file_id, cv_file_id, imtiyozi,
+            transkript_file_id, passport_oldi_file_id, passport_orqa_file_id, cv_file_id, imtiyozi, oqish_joyi_file_id,
             motivatsion_xat, created_at
         ) VALUES (
             $1, 'pending', $2, $3, $4, $5, $6, $7,
@@ -442,8 +444,8 @@ class Database:
             $12, $13, $14, $15,
             $16, $17, $18,
             $19, $20, $21, $22,
-            $23, $24, $25, $26, $27,
-            $28, $29
+            $23, $24, $25, $26, $27, $28,
+            $29, $30
         ) RETURNING *;
         """
         return await self.execute(
@@ -456,7 +458,7 @@ class Database:
             data.get('oldin_grant', False), data.get('grant_info', ''),
             data['kontrakt_sum'],
             data['oila_soni'], data['ota_info'], data['ona_info'], data['aka_opa_info'],
-            data.get('transkript_file_id'), data.get('passport_oldi_file_id'), data.get('passport_orqa_file_id'), data.get('cv_file_id'), data.get('imtiyozi'),
+            data.get('transkript_file_id'), data.get('passport_oldi_file_id'), data.get('passport_orqa_file_id'), data.get('cv_file_id'), data.get('imtiyozi'), data.get('oqish_joyi_file_id'),
             data['motivatsion_xat'], created_at,
             fetchrow=True
         )

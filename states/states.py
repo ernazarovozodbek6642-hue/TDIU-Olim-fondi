@@ -81,6 +81,7 @@ class ArizaStates(StatesGroup):
     passport_orqa = State()
     cv = State()
     imtiyozi = State()
+    oqish_joyi = State()
     # Motivatsion xat
     motivatsion_xat = State()
     # Tasdiqlash

@@ -127,6 +127,24 @@ async def ariza_detail(call: CallbackQuery):
         except Exception:
             pass
 
+    if a.get('imtiyozi'):
+        try:
+            try:
+                await bot.send_photo(call.from_user.id, photo=a['imtiyozi'], caption=f"🏅 <b>Imtiyoz hujjati</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+            except Exception:
+                await bot.send_document(call.from_user.id, document=a['imtiyozi'], caption=f"🏅 <b>Imtiyoz hujjati</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+        except Exception:
+            pass
+
+    if a.get('oqish_joyi_file_id'):
+        try:
+            try:
+                await bot.send_photo(call.from_user.id, photo=a['oqish_joyi_file_id'], caption=f"🏫 <b>O'qish joyidan ma'lumotnoma</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+            except Exception:
+                await bot.send_document(call.from_user.id, document=a['oqish_joyi_file_id'], caption=f"🏫 <b>O'qish joyidan ma'lumotnoma</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+        except Exception:
+            pass
+
     def bool_str(v): return "Ha ✅" if v else "Yo'q ❌"
 
     status_label = {"pending": "⏳ Kutilayotgan", "approved": "✅ Tasdiqlangan",
@@ -157,7 +175,8 @@ async def ariza_detail(call: CallbackQuery):
         text += f"  ↳ {a['grant_info']}\n"
     text += (
         f"💵 Kontrakt: {a['kontrakt_sum']}\n"
-        f"🏅 Imtiyozi: {a.get('imtiyozi', 'Yo\'q')}\n\n"
+        f"🏅 Imtiyozi: {'Yuklangan ✅' if a.get('imtiyozi') else 'Yo\'q ❌'}\n"
+        f"🏫 O'qish joyidan ma'lumotnoma: {'Yuklangan ✅' if a.get('oqish_joyi_file_id') else 'Yo\'q ❌'}\n\n"
         f"👨‍👩‍👧‍👦 Oila soni: {a['oila_soni']}\n"
         f"👨 Ota: {a['ota_info']}\n"
         f"👩 Ona: {a['ona_info']}\n"

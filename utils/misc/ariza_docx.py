@@ -183,20 +183,21 @@ def generate_ariza_docx(data: dict) -> io.BytesIO:
 
     _add_field(doc, "Agar 'Ha', qaysi grant va qachon", data.get('grant_info') or "—", 16)
     _add_field(doc, "Kontrakt summangiz (stipendiyasiz hisoblanganda)", data.get('kontrakt_sum', ''), 17)
-    _add_field(doc, "Sizda qanday imtiyoz bor (ijtimoiy himoya, chin yetim va h.k.)", data.get('imtiyozi') or "Yo'q", 18)
+    _add_field(doc, "Imtiyozingiz borligi (tasdiqlovchi hujjat)", "Yuklangan ✅" if data.get('imtiyozi') else "Yo'q ❌", 18)
+    _add_field(doc, "O'qish joyidan ma'lumotnoma (tasdiqlovchi hujjat)", "Yuklangan ✅" if data.get('oqish_joyi_file_id') else "Yo'q ❌", 19)
 
     # ════════════════════════════════
     # 4-BO'LIM: OILA
     # ════════════════════════════════
     _add_section_header(doc, "Oila a'zolari haqida to'liq ma'lumot")
 
-    _add_field(doc, "Oilangiz necha kishidan iborat", data.get('oila_soni', ''), 19)
+    _add_field(doc, "Oilangiz necha kishidan iborat", data.get('oila_soni', ''), 20)
     _add_field(doc, "Otasi haqida ma'lumot (F.I.Sh. | Ish joyi | Lavozim | Tug'ilgan sana)",
-               data.get('ota_info', ''), 20)
+               data.get('ota_info', ''), 21)
     _add_field(doc, "Onasi haqida ma'lumot (F.I.Sh. | Ish joyi | Lavozim | Tug'ilgan sana)",
-               data.get('ona_info', ''), 21)
+               data.get('ona_info', ''), 22)
     _add_field(doc, "Aka/uka/opa/singil haqida ma'lumot (F.I.Sh. | Ish joyi | Kurs | Shakl | Shartnoma | Tug'ilgan sana)",
-               data.get('aka_opa_info', ''), 22)
+               data.get('aka_opa_info', ''), 23)
 
     # ════════════════════════════════
     # 5-BO'LIM: MOTIVATSION XAT

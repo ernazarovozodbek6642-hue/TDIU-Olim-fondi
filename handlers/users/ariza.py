@@ -690,20 +690,58 @@ async def _ask_cv(target, lang):
         )
 
 
+def get_imtiyoz_kb(lang):
+    no_text = "Yo'q" if lang == 'uz' else "Нет"
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton("⬅️ Ortga"), KeyboardButton(no_text)],
+            [KeyboardButton("❌ Arizani to'xtatish")]
+        ],
+        resize_keyboard=True
+    )
+
+
 async def _ask_imtiyozi(target, lang):
     if lang == 'uz':
         await target.answer(
             "🏅 <b>Imtiyozingiz bormi?</b>\n\n"
-            "Sizda qanday imtiyoz bor (masalan: ijtimoiy himoya, chin yetim va h.k.)? Matn ko'rinishida yozib yuboring. Agar imtiyozingiz bo'lmasa, <b>Yo'q</b> deb yozing:",
-            reply_markup=ariza_step_kb,
-            parse_mode='HTML'
+            "Agar sizda imtiyoz bo'lsa (ijtimoiy himoya, chin yetim va h.k.), tegishli tasdiqlovchi hujjatni (rasm yoki fayl ko'rinishida) yuklang.\n"
+            "Hujjatni <a href=\"https://my.gov.uz/\">my.gov.uz</a> portali orqali yuklab olishingiz mumkin.\n\n"
+            "Agar imtiyozingiz bo'lmasa, quyidagi tugmani bosing yoki <b>Yo'q</b> deb yozing:",
+            reply_markup=get_imtiyoz_kb('uz'),
+            parse_mode='HTML',
+            disable_web_page_preview=True
         )
     else:
         await target.answer(
             "🏅 <b>Есть ли у вас льготы?</b>\n\n"
-            "Какие у вас есть льготы (например: социальная защита, статус сироты и т.д.)? Напишите текстом. Если льгот нет, напишите <b>Нет</b>:",
+            "Если у вас есть льготы (социальная защита, статус сироты и т.д.), загрузите подтверждающий документ (в виде фото или файла).\n"
+            "Вы можете скачать документ через портал <a href=\"https://my.gov.uz/\">my.gov.uz</a>.\n\n"
+            "Если у вас нет льгот, нажмите на кнопку ниже или напишите <b>Нет</b>:",
+            reply_markup=get_imtiyoz_kb('ru'),
+            parse_mode='HTML',
+            disable_web_page_preview=True
+        )
+
+
+async def _ask_oqish_joyi(target, lang):
+    if lang == 'uz':
+        await target.answer(
+            "🏫 <b>O'qish joyidan ma'lumotnoma</b>\n\n"
+            "Iltimos, o'qish joyingizdan ma'lumotnomani rasm yoki fayl (PDF/Word/etc.) ko'rinishida yuboring.\n"
+            "Ma'lumotnomani <a href=\"https://my.gov.uz/\">my.gov.uz</a> portali orqali yuklab olishingiz mumkin:",
             reply_markup=ariza_step_kb,
-            parse_mode='HTML'
+            parse_mode='HTML',
+            disable_web_page_preview=True
+        )
+    else:
+        await target.answer(
+            "🏫 <b>Справка с места учёбы</b>\n\n"
+            "Пожалуйста, отправьте справку с места вашей учёбы в виде фото или файла (PDF/Word/и др.).\n"
+            "Вы можете скачать справку через портал <a href=\"https://my.gov.uz/\">my.gov.uz</a>:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML',
+            disable_web_page_preview=True
         )
 
 
@@ -870,7 +908,7 @@ async def get_cv(msg: Message, state: FSMContext):
 
 
 # ─── IMTIYOZ ───
-@dp.message_handler(state=ArizaStates.imtiyozi, content_types=["text"])
+@dp.message_handler(state=ArizaStates.imtiyozi, content_types=["photo", "document", "text"])
 async def get_imtiyozi(msg: Message, state: FSMContext):
     if msg.text == "❌ Arizani to'xtatish":
         return
@@ -882,14 +920,64 @@ async def get_imtiyozi(msg: Message, state: FSMContext):
         await ArizaStates.cv.set()
         return
 
-    if not msg.text:
-        if lang == 'uz':
-            await msg.answer("❌ Iltimos, imtiyozi haqida matn ko'rinishida yozib yuboring!")
-        else:
-            await msg.answer("❌ Пожалуйста, напишите о льготах текстом!")
+    # Check if they skipped/have no privileges
+    if msg.text and msg.text.strip().lower() in ["yo'q", "yoq", "нет", "net", "no", "skip"]:
+        await state.update_data(imtiyozi=None, imtiyozi_file_type=None)
+        await _ask_oqish_joyi(msg, lang)
+        await ArizaStates.oqish_joyi.set()
         return
 
-    await state.update_data(imtiyozi=msg.text.strip())
+    file_id = None
+    file_type = None
+    if msg.photo:
+        file_id = msg.photo[-1].file_id
+        file_type = 'photo'
+    elif msg.document:
+        file_id = msg.document.file_id
+        file_type = 'document'
+
+    if not file_id:
+        if lang == 'uz':
+            await msg.answer("❌ Iltimos, imtiyozingizni tasdiqlovchi hujjatni (rasm yoki fayl shaklida) yuboring yoki «Yo'q» tugmasini bosing!")
+        else:
+            await msg.answer("❌ Пожалуйста, отправьте документ, подтверждающий льготу (в виде фото или файла), или нажмите кнопку «Нет»!")
+        return
+
+    await state.update_data(imtiyozi=file_id, imtiyozi_file_type=file_type)
+    await _ask_oqish_joyi(msg, lang)
+    await ArizaStates.oqish_joyi.set()
+
+
+# ─── OQISH JOYIDAN MA'LUMOTNOMA ───
+@dp.message_handler(state=ArizaStates.oqish_joyi, content_types=["photo", "document", "text"])
+async def get_oqish_joyi(msg: Message, state: FSMContext):
+    if msg.text == "❌ Arizani to'xtatish":
+        return
+    user = await db.select_user(str(msg.from_user.id))
+    lang = user.get('language', 'uz') if user else 'uz'
+
+    if msg.text == "⬅️ Ortga":
+        await _ask_imtiyozi(msg, lang)
+        await ArizaStates.imtiyozi.set()
+        return
+
+    file_id = None
+    file_type = None
+    if msg.photo:
+        file_id = msg.photo[-1].file_id
+        file_type = 'photo'
+    elif msg.document:
+        file_id = msg.document.file_id
+        file_type = 'document'
+
+    if not file_id:
+        if lang == 'uz':
+            await msg.answer("❌ Iltimos, o'qish joyidan ma'lumotnomani rasm yoki fayl shaklida yuboring!")
+        else:
+            await msg.answer("❌ Пожалуйста, отправьте справку с места учёбы в виде фото или файла!")
+        return
+
+    await state.update_data(oqish_joyi_file_id=file_id, oqish_joyi_file_type=file_type)
 
     if lang == 'uz':
         await msg.answer(
@@ -936,8 +1024,8 @@ async def get_motivatsion_xat(msg: Message, state: FSMContext):
     lang = user.get('language', 'uz') if user else 'uz'
 
     if msg.text == "⬅️ Ortga":
-        await _ask_imtiyozi(msg, lang)
-        await ArizaStates.imtiyozi.set()
+        await _ask_oqish_joyi(msg, lang)
+        await ArizaStates.oqish_joyi.set()
         return
 
     await state.update_data(motivatsion_xat=msg.text.strip())
@@ -1039,10 +1127,24 @@ async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
         f"📄 CV/Rezyume | 👤 {fish} (ID: {user_id})"
     )
 
+    imtiyozi_stored_id = None
+    if data.get('imtiyozi'):
+        imtiyozi_stored_id = await upload_to_storage_channel(
+            data['imtiyozi'], data['imtiyozi_file_type'],
+            f"🏅 Imtiyoz hujjati | 👤 {fish} (ID: {user_id})"
+        )
+
+    oqish_joyi_stored_id = await upload_to_storage_channel(
+        data['oqish_joyi_file_id'], data['oqish_joyi_file_type'],
+        f"🏫 O'qish joyidan ma'lumotnoma | 👤 {fish} (ID: {user_id})"
+    )
+
     data['transkript_file_id'] = transkript_stored_id
     data['passport_oldi_file_id'] = passport_oldi_stored_id
     data['passport_orqa_file_id'] = passport_orqa_stored_id
     data['cv_file_id'] = cv_stored_id
+    data['imtiyozi'] = imtiyozi_stored_id
+    data['oqish_joyi_file_id'] = oqish_joyi_stored_id
 
     tz = pytz.timezone("Asia/Tashkent")
     now = datetime.now(tz).replace(tzinfo=None)
@@ -1094,7 +1196,8 @@ async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
         admin_text += f"  ↳ {data['grant_info']}\n"
     admin_text += (
         f"• Kontrakt summa: {data['kontrakt_sum']}\n"
-        f"• Imtiyozi: {data.get('imtiyozi', 'Yo\'q')}\n\n"
+        f"• Imtiyozi: {'Yuklangan ✅' if data.get('imtiyozi') else 'Yo\'q ❌'}\n"
+        f"• O'qish joyidan ma'lumotnoma: Yuklangan ✅\n\n"
         f"👨‍👩‍👧‍👦 <b>Oila:</b>\n"
         f"• Soni: {data['oila_soni']}\n"
         f"• Ota: {data['ota_info']}\n"
@@ -1143,6 +1246,19 @@ async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
                 await bot.send_photo(admin_id, photo=cv_stored_id, caption=f"📄 <b>CV / Rezyume</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
             else:
                 await bot.send_document(admin_id, document=cv_stored_id, caption=f"📄 <b>CV / Rezyume</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+
+            # Send Privilege file (if exists)
+            if imtiyozi_stored_id:
+                if data.get('imtiyozi_file_type') == 'photo':
+                    await bot.send_photo(admin_id, photo=imtiyozi_stored_id, caption=f"🏅 <b>Imtiyoz hujjati</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+                else:
+                    await bot.send_document(admin_id, document=imtiyozi_stored_id, caption=f"🏅 <b>Imtiyoz hujjati</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+
+            # Send Study Certificate
+            if data.get('oqish_joyi_file_type') == 'photo':
+                await bot.send_photo(admin_id, photo=oqish_joyi_stored_id, caption=f"🏫 <b>O'qish joyidan ma'lumotnoma</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+            else:
+                await bot.send_document(admin_id, document=oqish_joyi_stored_id, caption=f"🏫 <b>O'qish joyidan ma'lumotnoma</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
 
             # Send text and action buttons
             sent = await bot.send_message(admin_id, admin_text, parse_mode='HTML', reply_markup=ariza_action_kb)
