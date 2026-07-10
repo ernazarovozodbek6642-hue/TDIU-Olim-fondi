@@ -11,7 +11,7 @@ from aiogram.types import (
     InputFile
 )
 
-from data.config import ADMINS
+from data.config import ADMINS, STORAGE_CHANNEL
 from loader import dp, db, bot
 from states.states import ArizaStates
 from keyboards.default.Student_DB import build_main_kb_uz, build_main_kb_ru
@@ -614,6 +614,99 @@ async def get_ona_info(msg: Message, state: FSMContext):
     await ArizaStates.aka_opa_info.set()
 
 
+ariza_step_kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton("⬅️ Ortga"), KeyboardButton("❌ Arizani to'xtatish")]
+    ],
+    resize_keyboard=True
+)
+
+
+async def _ask_transkript(target, lang):
+    if lang == 'uz':
+        await target.answer(
+            "🎓 <b>Transkript</b>\n\n"
+            "Iltimos, transkriptingizni rasm yoki fayl (PDF/Word/etc.) ko'rinishida yuboring:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+    else:
+        await target.answer(
+            "🎓 <b>Транскрипт</b>\n\n"
+            "Пожалуйста, отправьте ваш транскрипт в виде фото или файла (PDF/Word/и др.):",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+
+
+async def _ask_passport_oldi(target, lang):
+    if lang == 'uz':
+        await target.answer(
+            "🪪 <b>Pasport (Oldi tomoni)</b>\n\n"
+            "Iltimos, pasportingizning oldi tomonini (rasmli qismi) rasm yoki fayl ko'rinishida yuboring:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+    else:
+        await target.answer(
+            "🪪 <b>Паспорт (Лицевая сторона)</b>\n\n"
+            "Пожалуйста, отправьте лицевую сторону вашего паспорта (с фотографией) в виде фото или файла:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+
+
+async def _ask_passport_orqa(target, lang):
+    if lang == 'uz':
+        await target.answer(
+            "🪪 <b>Pasport (Orqa tomoni)</b>\n\n"
+            "Iltimos, pasportingizning orqa tomonini (manzil ro'yxati yoki ID karta orqasi) rasm yoki fayl ko'rinishida yuboring:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+    else:
+        await target.answer(
+            "🪪 <b>Паспорт (Обратная сторона)</b>\n\n"
+            "Пожалуйста, отправьте обратную сторону вашего паспорта (регистрация или обратная сторона ID-карты) в виде фото или файла:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+
+
+async def _ask_cv(target, lang):
+    if lang == 'uz':
+        await target.answer(
+            "📄 <b>CV / Rezyume</b>\n\n"
+            "Iltimos, CV yoki Rezyumeingizni fayl yoki rasm ko'rinishida yuboring:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+    else:
+        await target.answer(
+            "📄 <b>CV / Резюме</b>\n\n"
+            "Пожалуйста, отправьте ваше CV или резюме в виде файла или фото:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+
+
+async def _ask_imtiyozi(target, lang):
+    if lang == 'uz':
+        await target.answer(
+            "🏅 <b>Imtiyozingiz bormi?</b>\n\n"
+            "Sizda qanday imtiyoz bor (masalan: ijtimoiy himoya, chin yetim va h.k.)? Matn ko'rinishida yozib yuboring. Agar imtiyozingiz bo'lmasa, <b>Yo'q</b> deb yozing:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+    else:
+        await target.answer(
+            "🏅 <b>Есть ли у вас льготы?</b>\n\n"
+            "Какие у вас есть льготы (например: социальная защита, статус сироты и т.д.)? Напишите текстом. Если льгот нет, напишите <b>Нет</b>:",
+            reply_markup=ariza_step_kb,
+            parse_mode='HTML'
+        )
+
+
 @dp.message_handler(state=ArizaStates.aka_opa_info)
 async def get_aka_opa_info(msg: Message, state: FSMContext):
     if msg.text == "❌ Arizani to'xtatish":
@@ -621,6 +714,183 @@ async def get_aka_opa_info(msg: Message, state: FSMContext):
     await state.update_data(aka_opa_info=msg.text.strip())
     user = await db.select_user(str(msg.from_user.id))
     lang = user.get('language', 'uz') if user else 'uz'
+    await _ask_transkript(msg, lang)
+    await ArizaStates.transkript.set()
+
+
+# ─── TRANSKRIPT ───
+@dp.message_handler(state=ArizaStates.transkript, content_types=["photo", "document", "text"])
+async def get_transkript(msg: Message, state: FSMContext):
+    if msg.text == "❌ Arizani to'xtatish":
+        return
+    user = await db.select_user(str(msg.from_user.id))
+    lang = user.get('language', 'uz') if user else 'uz'
+
+    if msg.text == "⬅️ Ortga":
+        if lang == 'uz':
+            await msg.answer(
+                "👫 Aka/uka/opa/singillaringiz haqida ma'lumot kiriting:\n"
+                "<i>F.I.Sh. | Ishlash/o'qish joyi | Lavozimi/kursi | Shakli | Shartnoma turi | Tug'ilgan sana</i>\n\n"
+                "Yo'q bo'lsa: <b>Yo'q</b> deb yozing.",
+                reply_markup=cancel_reply_kb,
+                parse_mode='HTML'
+            )
+        else:
+            await msg.answer(
+                "👫 Введите сведения о братьях/сёстрах:\n"
+                "<i>Ф.И.О. | Место работы/учёбы | Должность/курс | Форма | Тип договора | Дата рождения</i>\n\n"
+                "Если нет — напишите: <b>Нет</b>",
+                reply_markup=cancel_reply_kb,
+                parse_mode='HTML'
+            )
+        await ArizaStates.aka_opa_info.set()
+        return
+
+    file_id = None
+    file_type = None
+    if msg.photo:
+        file_id = msg.photo[-1].file_id
+        file_type = 'photo'
+    elif msg.document:
+        file_id = msg.document.file_id
+        file_type = 'document'
+
+    if not file_id:
+        if lang == 'uz':
+            await msg.answer("❌ Iltimos, transkriptingizni rasm yoki fayl shaklida yuboring!")
+        else:
+            await msg.answer("❌ Пожалуйста, отправьте ваш транскрипт в виде фото или файла!")
+        return
+
+    await state.update_data(transkript_file_id=file_id, transkript_file_type=file_type)
+    await _ask_passport_oldi(msg, lang)
+    await ArizaStates.passport_oldi.set()
+
+
+# ─── PASSPORT OLDI ───
+@dp.message_handler(state=ArizaStates.passport_oldi, content_types=["photo", "document", "text"])
+async def get_passport_oldi(msg: Message, state: FSMContext):
+    if msg.text == "❌ Arizani to'xtatish":
+        return
+    user = await db.select_user(str(msg.from_user.id))
+    lang = user.get('language', 'uz') if user else 'uz'
+
+    if msg.text == "⬅️ Ortga":
+        await _ask_transkript(msg, lang)
+        await ArizaStates.transkript.set()
+        return
+
+    file_id = None
+    file_type = None
+    if msg.photo:
+        file_id = msg.photo[-1].file_id
+        file_type = 'photo'
+    elif msg.document:
+        file_id = msg.document.file_id
+        file_type = 'document'
+
+    if not file_id:
+        if lang == 'uz':
+            await msg.answer("❌ Iltimos, pasportingizning oldi tomonini rasm yoki fayl shaklida yuboring!")
+        else:
+            await msg.answer("❌ Пожалуйста, отправьте лицевую сторону вашего паспорта в виде фото или файла!")
+        return
+
+    await state.update_data(passport_oldi_file_id=file_id, passport_oldi_file_type=file_type)
+    await _ask_passport_orqa(msg, lang)
+    await ArizaStates.passport_orqa.set()
+
+
+# ─── PASSPORT ORQA ───
+@dp.message_handler(state=ArizaStates.passport_orqa, content_types=["photo", "document", "text"])
+async def get_passport_orqa(msg: Message, state: FSMContext):
+    if msg.text == "❌ Arizani to'xtatish":
+        return
+    user = await db.select_user(str(msg.from_user.id))
+    lang = user.get('language', 'uz') if user else 'uz'
+
+    if msg.text == "⬅️ Ortga":
+        await _ask_passport_oldi(msg, lang)
+        await ArizaStates.passport_oldi.set()
+        return
+
+    file_id = None
+    file_type = None
+    if msg.photo:
+        file_id = msg.photo[-1].file_id
+        file_type = 'photo'
+    elif msg.document:
+        file_id = msg.document.file_id
+        file_type = 'document'
+
+    if not file_id:
+        if lang == 'uz':
+            await msg.answer("❌ Iltimos, pasportingizning orqa tomonini rasm yoki fayl shaklida yuboring!")
+        else:
+            await msg.answer("❌ Пожалуйста, отправьте обратную сторону вашего паспорта в виде фото или файла!")
+        return
+
+    await state.update_data(passport_orqa_file_id=file_id, passport_orqa_file_type=file_type)
+    await _ask_cv(msg, lang)
+    await ArizaStates.cv.set()
+
+
+# ─── CV / REZYUME ───
+@dp.message_handler(state=ArizaStates.cv, content_types=["photo", "document", "text"])
+async def get_cv(msg: Message, state: FSMContext):
+    if msg.text == "❌ Arizani to'xtatish":
+        return
+    user = await db.select_user(str(msg.from_user.id))
+    lang = user.get('language', 'uz') if user else 'uz'
+
+    if msg.text == "⬅️ Ortga":
+        await _ask_passport_orqa(msg, lang)
+        await ArizaStates.passport_orqa.set()
+        return
+
+    file_id = None
+    file_type = None
+    if msg.photo:
+        file_id = msg.photo[-1].file_id
+        file_type = 'photo'
+    elif msg.document:
+        file_id = msg.document.file_id
+        file_type = 'document'
+
+    if not file_id:
+        if lang == 'uz':
+            await msg.answer("❌ Iltimos, CV yoki Rezyumeingizni fayl yoki rasm shaklida yuboring!")
+        else:
+            await msg.answer("❌ Пожалуйста, отправьте ваше CV или резюме в виде файла или фото!")
+        return
+
+    await state.update_data(cv_file_id=file_id, cv_file_type=file_type)
+    await _ask_imtiyozi(msg, lang)
+    await ArizaStates.imtiyozi.set()
+
+
+# ─── IMTIYOZ ───
+@dp.message_handler(state=ArizaStates.imtiyozi, content_types=["text"])
+async def get_imtiyozi(msg: Message, state: FSMContext):
+    if msg.text == "❌ Arizani to'xtatish":
+        return
+    user = await db.select_user(str(msg.from_user.id))
+    lang = user.get('language', 'uz') if user else 'uz'
+
+    if msg.text == "⬅️ Ortga":
+        await _ask_cv(msg, lang)
+        await ArizaStates.cv.set()
+        return
+
+    if not msg.text:
+        if lang == 'uz':
+            await msg.answer("❌ Iltimos, imtiyozi haqida matn ko'rinishida yozib yuboring!")
+        else:
+            await msg.answer("❌ Пожалуйста, напишите о льготах текстом!")
+        return
+
+    await state.update_data(imtiyozi=msg.text.strip())
+
     if lang == 'uz':
         await msg.answer(
             "━━━━━━━━━━━━━━━━━━━━\n"
@@ -633,6 +903,7 @@ async def get_aka_opa_info(msg: Message, state: FSMContext):
             "• O'zingizni haqiqatan munosibman deb o'ylaysizmi?\n"
             "• Nima uchun aynan siz stipendiya g'olibi bo'lishingiz kerak?\n\n"
             "<i>Barcha savollarga javob berib, bir xabarda yozing.</i>",
+            reply_markup=ariza_step_kb,
             parse_mode='HTML'
         )
     else:
@@ -647,6 +918,7 @@ async def get_aka_opa_info(msg: Message, state: FSMContext):
             "• Считаете ли вы себя достойным кандидатом?\n"
             "• Почему именно вы должны стать стипендиатом?\n\n"
             "<i>Ответьте на все вопросы в одном сообщении.</i>",
+            reply_markup=ariza_step_kb,
             parse_mode='HTML'
         )
     await ArizaStates.motivatsion_xat.set()
@@ -660,6 +932,14 @@ async def get_aka_opa_info(msg: Message, state: FSMContext):
 async def get_motivatsion_xat(msg: Message, state: FSMContext):
     if msg.text == "❌ Arizani to'xtatish":
         return
+    user = await db.select_user(str(msg.from_user.id))
+    lang = user.get('language', 'uz') if user else 'uz'
+
+    if msg.text == "⬅️ Ortga":
+        await _ask_imtiyozi(msg, lang)
+        await ArizaStates.imtiyozi.set()
+        return
+
     await state.update_data(motivatsion_xat=msg.text.strip())
     data = await state.get_data()
     user = await db.select_user(str(msg.from_user.id))
@@ -716,6 +996,20 @@ async def get_motivatsion_xat(msg: Message, state: FSMContext):
 #  YUBORISH
 # ════════════════════════════════════════
 
+async def upload_to_storage_channel(file_id: str, file_type: str, caption: str) -> str:
+    """Uploads file to storage channel and returns the file_id from the channel's sent message"""
+    try:
+        if file_type == 'photo':
+            sent_msg = await bot.send_photo(STORAGE_CHANNEL, photo=file_id, caption=caption)
+            return sent_msg.photo[-1].file_id
+        else:
+            sent_msg = await bot.send_document(STORAGE_CHANNEL, document=file_id, caption=caption)
+            return sent_msg.document.file_id
+    except Exception as e:
+        print(f"[Storage Channel Upload Error] {e}")
+        return file_id
+
+
 @dp.callback_query_handler(text='ariza:yuborish', state=ArizaStates.confirm)
 async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
@@ -725,6 +1019,30 @@ async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
     user_id = str(call.from_user.id)
     user = await db.select_user(user_id)
     lang = user.get('language', 'uz') if user else 'uz'
+
+    # Upload files to STORAGE_CHANNEL and get stored file_ids
+    fish = data.get('fish', 'nomzod')
+    transkript_stored_id = await upload_to_storage_channel(
+        data['transkript_file_id'], data['transkript_file_type'],
+        f"🎓 Transkript | 👤 {fish} (ID: {user_id})"
+    )
+    passport_oldi_stored_id = await upload_to_storage_channel(
+        data['passport_oldi_file_id'], data['passport_oldi_file_type'],
+        f"🪪 Pasport (Oldi) | 👤 {fish} (ID: {user_id})"
+    )
+    passport_orqa_stored_id = await upload_to_storage_channel(
+        data['passport_orqa_file_id'], data['passport_orqa_file_type'],
+        f"🪪 Pasport (Orqa) | 👤 {fish} (ID: {user_id})"
+    )
+    cv_stored_id = await upload_to_storage_channel(
+        data['cv_file_id'], data['cv_file_type'],
+        f"📄 CV/Rezyume | 👤 {fish} (ID: {user_id})"
+    )
+
+    data['transkript_file_id'] = transkript_stored_id
+    data['passport_oldi_file_id'] = passport_oldi_stored_id
+    data['passport_orqa_file_id'] = passport_orqa_stored_id
+    data['cv_file_id'] = cv_stored_id
 
     tz = pytz.timezone("Asia/Tashkent")
     now = datetime.now(tz).replace(tzinfo=None)
@@ -769,13 +1087,14 @@ async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
     admin_text += (
         f"• Konferensiya: {bool_str(data.get('konferensiya'))}\n"
         f"• Maqolalar: {bool_str(data.get('maqola'))}\n\n"
-        f"💰 <b>Moliya:</b>\n"
+        f"💰 <b>Moliya va Imtiyozlar:</b>\n"
         f"• Oldin grant: {bool_str(data.get('oldin_grant'))}\n"
     )
     if data.get('grant_info'):
         admin_text += f"  ↳ {data['grant_info']}\n"
     admin_text += (
-        f"• Kontrakt summa: {data['kontrakt_sum']}\n\n"
+        f"• Kontrakt summa: {data['kontrakt_sum']}\n"
+        f"• Imtiyozi: {data.get('imtiyozi', 'Yo\'q')}\n\n"
         f"👨‍👩‍👧‍👦 <b>Oila:</b>\n"
         f"• Soni: {data['oila_soni']}\n"
         f"• Ota: {data['ota_info']}\n"
@@ -792,7 +1111,6 @@ async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
     ])
 
     # Word hujjat tayyorlash
-    fish = data.get('fish', 'nomzod')
     docx_filename = f"ariza_{fish.split()[0]}_{ariza['id']}.docx"
     try:
         docx_buf = generate_ariza_docx(data)
@@ -802,8 +1120,35 @@ async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
     admin_msgs = []  # har bir adminga yuborilgan asosiy xabarning chat_id + msg_id
     for admin_id in ADMINS:
         try:
+            # Send Transcript
+            if data.get('transkript_file_type') == 'photo':
+                await bot.send_photo(admin_id, photo=transkript_stored_id, caption=f"🎓 <b>Transkript</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+            else:
+                await bot.send_document(admin_id, document=transkript_stored_id, caption=f"🎓 <b>Transkript</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+
+            # Send Passport Front
+            if data.get('passport_oldi_file_type') == 'photo':
+                await bot.send_photo(admin_id, photo=passport_oldi_stored_id, caption=f"🪪 <b>Pasport (Oldi tomoni)</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+            else:
+                await bot.send_document(admin_id, document=passport_oldi_stored_id, caption=f"🪪 <b>Pasport (Oldi tomoni)</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+
+            # Send Passport Back
+            if data.get('passport_orqa_file_type') == 'photo':
+                await bot.send_photo(admin_id, photo=passport_orqa_stored_id, caption=f"🪪 <b>Pasport (Orqa tomoni)</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+            else:
+                await bot.send_document(admin_id, document=passport_orqa_stored_id, caption=f"🪪 <b>Pasport (Orqa tomoni)</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+
+            # Send CV
+            if data.get('cv_file_type') == 'photo':
+                await bot.send_photo(admin_id, photo=cv_stored_id, caption=f"📄 <b>CV / Rezyume</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+            else:
+                await bot.send_document(admin_id, document=cv_stored_id, caption=f"📄 <b>CV / Rezyume</b> (#{ariza['id']}) — {fish}", parse_mode='HTML')
+
+            # Send text and action buttons
             sent = await bot.send_message(admin_id, admin_text, parse_mode='HTML', reply_markup=ariza_action_kb)
             admin_msgs.append({"chat_id": str(admin_id), "msg_id": sent.message_id})
+
+            # Send Word doc
             if docx_buf:
                 docx_buf.seek(0)
                 await bot.send_document(
@@ -814,8 +1159,8 @@ async def ariza_yuborish(call: CallbackQuery, state: FSMContext):
             else:
                 motivatsion_text = f"📝 <b>Motivatsion xat (#{ariza['id']}):</b>\n\n{data['motivatsion_xat']}"
                 await bot.send_message(admin_id, motivatsion_text, parse_mode='HTML')
-        except Exception:
-            pass
+        except Exception as ex:
+            print(f"[Admin Send Error] {ex}")
 
     if admin_msgs:
         await db.save_ariza_admin_msgs(ariza['id'], admin_msgs)
