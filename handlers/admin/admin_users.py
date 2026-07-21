@@ -1,4 +1,4 @@
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from loader import dp, db, bot
@@ -10,6 +10,17 @@ from keyboards.inline.admin_kb import users_list_kb, chat_end_kb, back_to_admin_
 active_sessions = {}
 # Sahifa xotirasi: {admin_id: (users_list, page)}
 users_cache = {}
+
+
+def user_detail_kb(user_id, registered):
+    toggle_label = "⏳ Ruxsatni o'chirish" if registered else "✅ Ruxsat berish"
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton("💬 Chat boshlash", callback_data=f"chat_start:{user_id}"),
+            InlineKeyboardButton(toggle_label, callback_data=f"toggle_reg:{user_id}")
+        ],
+        [InlineKeyboardButton("⬅️ Ortga", callback_data="adm:users")]
+    ])
 
 
 @dp.callback_query_handler(text='adm:users')
@@ -34,6 +45,100 @@ async def users_page(call: CallbackQuery):
 
 
 @dp.callback_query_handler(Text(startswith='chatuser:'))
+async def show_user_details(call: CallbackQuery):
+    if str(call.from_user.id) not in ADMINS:
+        return
+    target_user_id = call.data.split(':')[1]
+    user = await db.select_user(target_user_id)
+    if not user:
+        await call.answer("Foydalanuvchi topilmadi", show_alert=True)
+        return
+
+    name = user.get('real_name') or user.get('full_name') or "Noma'lum"
+    phone = user.get('phone') or "Yo'q"
+    otm = user.get('otm') or "Yo'q"
+    course = user.get('course') or "Yo'q"
+    username = f"@{user['username']}" if user.get('username') else "Yo'q"
+    registered_status = "Ruxsat berilgan ✅" if user.get('registered') else "Kutilmoqda (Ruxsat berilmagan) ⏳"
+
+    text = (
+        f"👤 <b>Foydalanuvchi ma'lumotlari</b>\n\n"
+        f"• Telegram: {user['full_name']} ({username})\n"
+        f"• F.I.SH: <b>{name}</b>\n"
+        f"• Telefon: {phone}\n"
+        f"• OTM: {otm}\n"
+        f"• Kurs: {course}\n"
+        f"• Hujjat topshirish huquqi: <b>{registered_status}</b>\n\n"
+        f"Tanlang:"
+    )
+
+    await call.message.edit_text(
+        text,
+        reply_markup=user_detail_kb(target_user_id, user.get('registered', False)),
+        parse_mode='HTML'
+    )
+
+
+@dp.callback_query_handler(Text(startswith='toggle_reg:'))
+async def toggle_registration(call: CallbackQuery):
+    if str(call.from_user.id) not in ADMINS:
+        return
+    target_user_id = call.data.split(':')[1]
+    user = await db.select_user(target_user_id)
+    if not user:
+        await call.answer("Foydalanuvchi topilmadi", show_alert=True)
+        return
+
+    new_status = not user.get('registered', False)
+    await db.execute("UPDATE users SET registered=$2 WHERE id=$1", target_user_id, new_status, execute=True)
+
+    # Foydalanuvchini xabardor qilish
+    try:
+        if new_status:
+            await bot.send_message(
+                target_user_id,
+                "🎉 <b>Tabriklaymiz!</b>\n\n"
+                "Admin sizga «📂 Hujjat yuborish» bo'limidan foydalanishga ruxsat berdi.",
+                parse_mode='HTML'
+            )
+        else:
+            await bot.send_message(
+                target_user_id,
+                "⏳ Admin sizning «📂 Hujjat yuborish» bo'limidan foydalanish ruxsatingizni vaqtincha to'xtatdi.",
+                parse_mode='HTML'
+            )
+    except Exception:
+        pass
+
+    # Yangilangan ko'rinishni qayta yuklash
+    user = await db.select_user(target_user_id)
+    name = user.get('real_name') or user.get('full_name') or "Noma'lum"
+    phone = user.get('phone') or "Yo'q"
+    otm = user.get('otm') or "Yo'q"
+    course = user.get('course') or "Yo'q"
+    username = f"@{user['username']}" if user.get('username') else "Yo'q"
+    registered_status = "Ruxsat berilgan ✅" if user.get('registered') else "Kutilmoqda (Ruxsat berilmagan) ⏳"
+
+    text = (
+        f"👤 <b>Foydalanuvchi ma'lumotlari</b>\n\n"
+        f"• Telegram: {user['full_name']} ({username})\n"
+        f"• F.I.SH: <b>{name}</b>\n"
+        f"• Telefon: {phone}\n"
+        f"• OTM: {otm}\n"
+        f"• Kurs: {course}\n"
+        f"• Hujjat topshirish huquqi: <b>{registered_status}</b>\n\n"
+        f"Tanlang:"
+    )
+
+    await call.answer("Ruxsat berildi" if new_status else "Ruxsat olindi")
+    await call.message.edit_text(
+        text,
+        reply_markup=user_detail_kb(target_user_id, user.get('registered', False)),
+        parse_mode='HTML'
+    )
+
+
+@dp.callback_query_handler(Text(startswith='chat_start:'))
 async def start_chat(call: CallbackQuery, state: FSMContext):
     if str(call.from_user.id) not in ADMINS:
         return

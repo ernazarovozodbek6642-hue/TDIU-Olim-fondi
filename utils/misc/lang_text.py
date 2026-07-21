@@ -231,14 +231,14 @@ async def student_name_uz(msg):
     text_ = "O'zingizni F.I.SH tanlang!"
     msg_ = await msg.answer("...", reply_markup=back_uz)
     await msg_.delete()
-    await msg.answer(text=text_, reply_markup=get_students_keyboard_uz(page=0))
+    await msg.answer(text=text_, reply_markup=await get_students_keyboard_uz(db, page=0))
 
 
 async def student_name_ru(msg):
     text_ = "Выберите своё Ф.И.О!"
     msg_ = await msg.answer("...", reply_markup=back_ru)
     await msg_.delete()
-    await msg.answer(text=text_, reply_markup=get_students_keyboard_ru(page=0))
+    await msg.answer(text=text_, reply_markup=await get_students_keyboard_ru(db, page=0))
 
 
 async def file_theme_uz(msg: Message, student):

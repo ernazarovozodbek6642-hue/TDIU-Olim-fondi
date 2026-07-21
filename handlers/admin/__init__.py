@@ -7,3 +7,4 @@ from . import admin_broadcast
 from . import admin_events
 from . import admin_ariza
 from . import admin_cms
+from . import admin_sessions
