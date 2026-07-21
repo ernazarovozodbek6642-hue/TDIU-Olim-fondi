@@ -372,6 +372,54 @@ class Database:
         sql = "SELECT COUNT(*) FROM documents"
         return await self.execute(sql, fetchval=True)
 
+    # ─── SESSIDALAR (SESSIONS) ───
+    async def create_table_sessions(self):
+        sql = """
+        CREATE TABLE IF NOT EXISTS sessions (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) UNIQUE NOT NULL,
+            is_active BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP
+        );
+        """
+        await self.execute(sql, execute=True)
+
+    async def seed_default_session(self):
+        count = await self.execute("SELECT COUNT(*) FROM sessions", fetchval=True)
+        if count and count > 0:
+            return
+        import datetime
+        sql = "INSERT INTO sessions (name, is_active, created_at) VALUES ($1, TRUE, $2) RETURNING *;"
+        default_sess = await self.execute(sql, "2026/2027 Kuzgi", datetime.datetime.now(), fetchrow=True)
+        if default_sess:
+            await self.execute("UPDATE arizalar SET session_id=$1 WHERE session_id IS NULL", default_sess['id'], execute=True)
+
+    async def create_session(self, name: str):
+        import datetime
+        sql = "INSERT INTO sessions (name, is_active, created_at) VALUES ($1, FALSE, $2) ON CONFLICT (name) DO NOTHING RETURNING *;"
+        return await self.execute(sql, name, datetime.datetime.now(), fetchrow=True)
+
+    async def activate_session(self, session_id: int):
+        await self.execute("UPDATE sessions SET is_active=FALSE", execute=True)
+        sql = "UPDATE sessions SET is_active=TRUE WHERE id=$1 RETURNING *;"
+        return await self.execute(sql, session_id, fetchrow=True)
+
+    async def get_active_session(self):
+        sql = "SELECT * FROM sessions WHERE is_active=TRUE LIMIT 1;"
+        active = await self.execute(sql, fetchrow=True)
+        if not active:
+            sql_first = "SELECT * FROM sessions ORDER BY created_at DESC LIMIT 1;"
+            active = await self.execute(sql_first, fetchrow=True)
+        return active
+
+    async def get_all_sessions(self):
+        sql = "SELECT * FROM sessions ORDER BY created_at DESC;"
+        return await self.execute(sql, fetch=True)
+
+    async def get_session_by_id(self, session_id: int):
+        sql = "SELECT * FROM sessions WHERE id=$1;"
+        return await self.execute(sql, session_id, fetchrow=True)
+
     # ─── ARIZALAR ───
     async def create_table_arizalar(self):
         sql = """
@@ -400,6 +448,13 @@ class Database:
             ota_info TEXT,
             ona_info TEXT,
             aka_opa_info TEXT,
+            transkript_file_id TEXT,
+            passport_oldi_file_id TEXT,
+            passport_orqa_file_id TEXT,
+            cv_file_id TEXT,
+            imtiyozi TEXT,
+            oqish_joyi_file_id TEXT,
+            session_id INTEGER,
             motivatsion_xat TEXT,
             rejection_reason TEXT,
             admin_msg_ids TEXT DEFAULT '[]',
@@ -408,10 +463,20 @@ class Database:
         """
         await self.execute(sql, execute=True)
         # Mavjud jadvalga ustun qo'shish (agar yo'q bo'lsa)
-        await self.execute(
-            "ALTER TABLE arizalar ADD COLUMN IF NOT EXISTS admin_msg_ids TEXT DEFAULT '[]'",
-            execute=True
-        )
+        for col, coltype in [
+            ("admin_msg_ids", "TEXT DEFAULT '[]'"),
+            ("transkript_file_id", "TEXT"),
+            ("passport_oldi_file_id", "TEXT"),
+            ("passport_orqa_file_id", "TEXT"),
+            ("cv_file_id", "TEXT"),
+            ("imtiyozi", "TEXT"),
+            ("oqish_joyi_file_id", "TEXT"),
+            ("session_id", "INTEGER")
+        ]:
+            try:
+                await self.execute(f"ALTER TABLE arizalar ADD COLUMN IF NOT EXISTS {col} {coltype}", execute=True)
+            except Exception:
+                pass
 
     async def add_ariza(self, user_id: str, data: dict, created_at):
         sql = """
@@ -421,6 +486,8 @@ class Database:
             ilmiy_tadqiqot, tadqiqot_info, konferensiya, maqola,
             oldin_grant, grant_info, kontrakt_sum,
             oila_soni, ota_info, ona_info, aka_opa_info,
+            transkript_file_id, passport_oldi_file_id, passport_orqa_file_id, cv_file_id, imtiyozi, oqish_joyi_file_id,
+            session_id,
             motivatsion_xat, created_at
         ) VALUES (
             $1, 'pending', $2, $3, $4, $5, $6, $7,
@@ -428,7 +495,9 @@ class Database:
             $12, $13, $14, $15,
             $16, $17, $18,
             $19, $20, $21, $22,
-            $23, $24
+            $23, $24, $25, $26, $27, $28,
+            $29,
+            $30, $31
         ) RETURNING *;
         """
         return await self.execute(
@@ -441,13 +510,28 @@ class Database:
             data.get('oldin_grant', False), data.get('grant_info', ''),
             data['kontrakt_sum'],
             data['oila_soni'], data['ota_info'], data['ona_info'], data['aka_opa_info'],
+            data.get('transkript_file_id'), data.get('passport_oldi_file_id'), data.get('passport_orqa_file_id'), data.get('cv_file_id'), data.get('imtiyozi'), data.get('oqish_joyi_file_id'),
+            data.get('session_id'),
             data['motivatsion_xat'], created_at,
             fetchrow=True
         )
 
-    async def get_ariza_by_user(self, user_id: str):
+    async def get_ariza_by_user(self, user_id: str, session_id: int = None):
+        if session_id:
+            sql = "SELECT * FROM arizalar WHERE user_id=$1 AND session_id=$2 ORDER BY created_at DESC LIMIT 1"
+            return await self.execute(sql, user_id, session_id, fetchrow=True)
         sql = "SELECT * FROM arizalar WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1"
         return await self.execute(sql, user_id, fetchrow=True)
+
+    async def select_user_arizalar(self, user_id: str):
+        sql = """
+        SELECT a.*, s.name as session_name
+        FROM arizalar a
+        LEFT JOIN sessions s ON a.session_id = s.id
+        WHERE a.user_id = $1
+        ORDER BY a.created_at DESC
+        """
+        return await self.execute(sql, user_id, fetch=True)
 
     async def get_ariza_by_id(self, ariza_id: int):
         sql = """
@@ -458,10 +542,16 @@ class Database:
         """
         return await self.execute(sql, ariza_id, fetchrow=True)
 
-    async def get_all_arizalar(self, status: str = None):
-        if status:
+    async def get_all_arizalar(self, status: str = None, session_id: int = None):
+        if status and session_id:
+            sql = "SELECT * FROM arizalar WHERE status=$1 AND session_id=$2 ORDER BY created_at DESC"
+            return await self.execute(sql, status, session_id, fetch=True)
+        elif status:
             sql = "SELECT * FROM arizalar WHERE status=$1 ORDER BY created_at DESC"
             return await self.execute(sql, status, fetch=True)
+        elif session_id:
+            sql = "SELECT * FROM arizalar WHERE session_id=$1 ORDER BY created_at DESC"
+            return await self.execute(sql, session_id, fetch=True)
         sql = "SELECT * FROM arizalar ORDER BY created_at DESC"
         return await self.execute(sql, fetch=True)
 
@@ -473,14 +563,23 @@ class Database:
         sql = "UPDATE arizalar SET status='cancelled' WHERE user_id=$1 AND status='pending'"
         await self.execute(sql, user_id, execute=True)
 
-    async def search_arizalar(self, query: str):
+    async def search_arizalar(self, query: str, session_id: int = None):
+        if session_id:
+            sql = "SELECT * FROM arizalar WHERE fish ILIKE $1 AND session_id=$2 ORDER BY created_at DESC"
+            return await self.execute(sql, f'%{query}%', session_id, fetch=True)
         sql = "SELECT * FROM arizalar WHERE fish ILIKE $1 ORDER BY created_at DESC"
         return await self.execute(sql, f'%{query}%', fetch=True)
 
-    async def count_arizalar(self, status: str = None):
-        if status:
+    async def count_arizalar(self, status: str = None, session_id: int = None):
+        if status and session_id:
+            sql = "SELECT COUNT(*) FROM arizalar WHERE status=$1 AND session_id=$2"
+            return await self.execute(sql, status, session_id, fetchval=True)
+        elif status:
             sql = "SELECT COUNT(*) FROM arizalar WHERE status=$1"
             return await self.execute(sql, status, fetchval=True)
+        elif session_id:
+            sql = "SELECT COUNT(*) FROM arizalar WHERE session_id=$1"
+            return await self.execute(sql, session_id, fetchval=True)
         sql = "SELECT COUNT(*) FROM arizalar"
         return await self.execute(sql, fetchval=True)
 

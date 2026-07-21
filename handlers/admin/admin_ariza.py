@@ -90,6 +90,61 @@ async def ariza_detail(call: CallbackQuery):
         await call.answer("Topilmadi", show_alert=True)
         return
 
+    # Send files/photos first
+    if a.get('transkript_file_id'):
+        try:
+            try:
+                await bot.send_photo(call.from_user.id, photo=a['transkript_file_id'], caption=f"🎓 <b>Transkript</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+            except Exception:
+                await bot.send_document(call.from_user.id, document=a['transkript_file_id'], caption=f"🎓 <b>Transkript</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+        except Exception:
+            pass
+
+    if a.get('passport_oldi_file_id'):
+        try:
+            try:
+                await bot.send_photo(call.from_user.id, photo=a['passport_oldi_file_id'], caption=f"🪪 <b>Pasport (Oldi tomoni)</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+            except Exception:
+                await bot.send_document(call.from_user.id, document=a['passport_oldi_file_id'], caption=f"🪪 <b>Pasport (Oldi tomoni)</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+        except Exception:
+            pass
+
+    if a.get('passport_orqa_file_id'):
+        try:
+            try:
+                await bot.send_photo(call.from_user.id, photo=a['passport_orqa_file_id'], caption=f"🪪 <b>Pasport (Orqa tomoni)</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+            except Exception:
+                await bot.send_document(call.from_user.id, document=a['passport_orqa_file_id'], caption=f"🪪 <b>Pasport (Orqa tomoni)</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+        except Exception:
+            pass
+
+    if a.get('cv_file_id'):
+        try:
+            try:
+                await bot.send_photo(call.from_user.id, photo=a['cv_file_id'], caption=f"📄 <b>CV / Rezyume</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+            except Exception:
+                await bot.send_document(call.from_user.id, document=a['cv_file_id'], caption=f"📄 <b>CV / Rezyume</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+        except Exception:
+            pass
+
+    if a.get('imtiyozi'):
+        try:
+            try:
+                await bot.send_photo(call.from_user.id, photo=a['imtiyozi'], caption=f"🏅 <b>Imtiyoz hujjati</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+            except Exception:
+                await bot.send_document(call.from_user.id, document=a['imtiyozi'], caption=f"🏅 <b>Imtiyoz hujjati</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+        except Exception:
+            pass
+
+    if a.get('oqish_joyi_file_id'):
+        try:
+            try:
+                await bot.send_photo(call.from_user.id, photo=a['oqish_joyi_file_id'], caption=f"🏫 <b>O'qish joyidan ma'lumotnoma</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+            except Exception:
+                await bot.send_document(call.from_user.id, document=a['oqish_joyi_file_id'], caption=f"🏫 <b>O'qish joyidan ma'lumotnoma</b> (#{a['id']}) — {a['fish']}", parse_mode='HTML')
+        except Exception:
+            pass
+
     def bool_str(v): return "Ha ✅" if v else "Yo'q ❌"
 
     status_label = {"pending": "⏳ Kutilayotgan", "approved": "✅ Tasdiqlangan",
@@ -118,8 +173,14 @@ async def ariza_detail(call: CallbackQuery):
     )
     if a.get('grant_info'):
         text += f"  ↳ {a['grant_info']}\n"
+
+    imtiyozi_status = "Yuklangan ✅" if a.get('imtiyozi') else "Yo'q ❌"
+    oqish_status = "Yuklangan ✅" if a.get('oqish_joyi_file_id') else "Yo'q ❌"
+
     text += (
-        f"💵 Kontrakt: {a['kontrakt_sum']}\n\n"
+        f"💵 Kontrakt: {a['kontrakt_sum']}\n"
+        f"🏅 Imtiyozi: {imtiyozi_status}\n"
+        f"🏫 O'qish joyidan ma'lumotnoma: {oqish_status}\n\n"
         f"👨‍👩‍👧‍👦 Oila soni: {a['oila_soni']}\n"
         f"👨 Ota: {a['ota_info']}\n"
         f"👩 Ona: {a['ona_info']}\n"
@@ -158,19 +219,10 @@ async def ariza_tasdiqlash(call: CallbackQuery):
 
     await db.update_ariza_status(ariza_id, 'approved')
 
-    # Foydalanuvchini registered sifatida belgilash
-    await db.update_user_registration(
-        user_id=a['user_id'],
-        real_name=a['fish'],
-        phone=a['telefon'],
-        otm=a['otm'],
-        course=a['kurs']
-    )
-
     await call.message.edit_text(
         f"✅ <b>Ariza #{ariza_id} tasdiqlandi!</b>\n\n"
         f"👤 {a['fish']}\n"
-        f"Foydalanuvchi hujjat yuborish bo'limiga qo'shildi.",
+        f"Talabaga tasdiqlash xabarnomasi yuborildi.",
         parse_mode='HTML',
         reply_markup=back_to_admin_kb()
     )
@@ -185,17 +237,13 @@ async def ariza_tasdiqlash(call: CallbackQuery):
         if lang == 'uz':
             await bot.send_message(
                 a['user_id'],
-                "🎉 <b>Tabriklaymiz!</b>\n\n"
-                "Arizangiz ko'rib chiqildi va <b>tasdiqlandi</b>!\n\n"
-                "Endi «📂 Hujjat yuborish» bo'limidan foydalanishingiz mumkin.",
+                "🎉 Arizangiz tasdiqlandi. https://t.me/olimfondi kanalini kuzatib boring.",
                 parse_mode='HTML'
             )
         else:
             await bot.send_message(
                 a['user_id'],
-                "🎉 <b>Поздравляем!</b>\n\n"
-                "Ваша заявка рассмотрена и <b>одобрена</b>!\n\n"
-                "Теперь вы можете пользоваться разделом «📂 Отправить документ».",
+                "🎉 Ваша заявка одобрена. Следите за каналом https://t.me/olimfondi.",
                 parse_mode='HTML'
             )
     except Exception:
