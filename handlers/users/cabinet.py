@@ -29,55 +29,39 @@ async def show_cabinet(msg: Message, state: FSMContext):
     if not user:
         return
     lang = user.get('language', 'uz')
+    ariza = await db.get_ariza_by_user(str(msg.from_user.id))
 
-    user_arizalar = await db.select_user_arizalar(str(msg.from_user.id))
-
-    if user_arizalar:
-        latest = user_arizalar[0]
-        fish = latest['fish'] or user.get('real_name') or user.get('full_name') or '—'
-        phone = latest['telefon'] or user.get('phone') or '—'
-        otm = latest['otm'] or user.get('otm') or '—'
-        course = latest['kurs'] or user.get('course') or '—'
-
+    if ariza:
+        status = ariza['status']
+        created = ariza['created_at'].strftime('%d.%m.%Y %H:%M') if ariza.get('created_at') else '—'
         if lang == 'uz':
             text = (
                 "🗂 <b>Shaxsiy kabinet</b>\n\n"
-                f"👤 F.I.SH: {fish}\n"
-                f"📱 Telefon: {phone}\n"
-                f"🏛 OTM: {otm}\n"
-                f"📚 Kurs: {course}\n\n"
-                f"📝 <b>Arizalar tarixi:</b>\n"
+                f"👤 F.I.SH: {ariza['fish'] or '—'}\n"
+                f"📱 Telefon: {ariza['telefon'] or '—'}\n"
+                f"🏛 OTM: {ariza['otm'] or '—'}\n"
+                f"📚 Kurs: {ariza['kurs'] or '—'}\n\n"
+                f"📅 Ariza yuborilgan: {created}\n"
+                f"📋 Holati: <b>{STATUS_UZ.get(status, status)}</b>"
             )
-            for a in user_arizalar:
-                sess_name = a.get('session_name') or "Legacy"
-                created = a['created_at'].strftime('%d.%m.%Y %H:%M') if a.get('created_at') else '—'
-                status_label = STATUS_UZ.get(a['status'], a['status'])
-                text += f"• <b>{sess_name}</b>: {status_label} <i>({created})</i>\n"
-                if a['status'] == 'rejected' and a.get('rejection_reason'):
-                    text += f"  ↳ Rad sababi: <i>{a['rejection_reason']}</i>\n"
+            if status == 'rejected' and ariza.get('rejection_reason'):
+                text += f"\n❌ Sabab: <i>{ariza['rejection_reason']}</i>"
         else:
             text = (
                 "🗂 <b>Личный кабинет</b>\n\n"
-                f"👤 Ф.И.О: {fish}\n"
-                f"📱 Телефон: {phone}\n"
-                f"🏛 Вуз: {otm}\n"
-                f"📚 Курс: {course}\n\n"
-                f"📝 <b>История заявок:</b>\n"
+                f"👤 Ф.И.О: {ariza['fish'] or '—'}\n"
+                f"📱 Телефон: {ariza['telefon'] or '—'}\n"
+                f"🏛 Вуз: {ariza['otm'] or '—'}\n"
+                f"📚 Курс: {ariza['kurs'] or '—'}\n\n"
+                f"📅 Дата подачи: {created}\n"
+                f"📋 Статус: <b>{STATUS_RU.get(status, status)}</b>"
             )
-            for a in user_arizalar:
-                sess_name = a.get('session_name') or "Legacy"
-                created = a['created_at'].strftime('%d.%m.%Y %H:%M') if a.get('created_at') else '—'
-                status_label = STATUS_RU.get(a['status'], a['status'])
-                text += f"• <b>{sess_name}</b>: {status_label} <i>({created})</i>\n"
-                if a['status'] == 'rejected' and a.get('rejection_reason'):
-                    text += f"  ↳ Причина: <i>{a['rejection_reason']}</i>\n"
-
+            if status == 'rejected' and ariza.get('rejection_reason'):
+                text += f"\n❌ Причина: <i>{ariza['rejection_reason']}</i>"
         await msg.answer(text, parse_mode='HTML')
 
     else:
         # Ariza yuborilmagan
-        active_sess = await db.get_active_session()
-        sess_name = active_sess['name'] if active_sess else "2026/2027 o'quv yili"
         if lang == 'uz':
             kb = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton("📝 Ariza yuborish", callback_data="cab:start_ariza")]
@@ -85,7 +69,7 @@ async def show_cabinet(msg: Message, state: FSMContext):
             await msg.answer(
                 "🗂 <b>Shaxsiy kabinet</b>\n\n"
                 "Siz hali ariza yubormagansiz.\n\n"
-                f"Sessiya: <b>{sess_name}</b> uchun ariza topshirish uchun quyidagi tugmani bosing 👇",
+                "2026/2027 o'quv yili uchun ariza topshirish uchun quyidagi tugmani bosing 👇",
                 reply_markup=kb, parse_mode='HTML'
             )
         else:
@@ -95,7 +79,7 @@ async def show_cabinet(msg: Message, state: FSMContext):
             await msg.answer(
                 "🗂 <b>Личный кабинет</b>\n\n"
                 "Вы ещё не подавали заявку.\n\n"
-                f"Нажмите кнопку ниже для подачи заявки на <b>{sess_name}</b> 👇",
+                "Нажмите кнопку ниже для подачи заявки на 2026/2027 учебный год 👇",
                 reply_markup=kb, parse_mode='HTML'
             )
 

@@ -20,10 +20,10 @@ async def send_file_start(msg: Message, state: FSMContext):
 
     if lang_code == 'uz':
         await msg.answer("📂 Talabalar ro'yxatidan o'zingizni tanlang 👇",
-                         reply_markup=await get_students_keyboard_uz(db, page=0))
+                         reply_markup=get_students_keyboard_uz(page=0))
     else:
         await msg.answer("📂 Выберите себя из списка студентов 👇",
-                         reply_markup=await get_students_keyboard_ru(db, page=0))
+                         reply_markup=get_students_keyboard_ru(page=0))
     await SendFile.student_list.set()
 
 
@@ -33,28 +33,18 @@ async def change_page(call: CallbackQuery, state: FSMContext):
     user = await db.select_user(str(call.from_user.id))
     lang_code = user['language'] if user else 'uz'
     if lang_code == 'uz':
-        await call.message.edit_reply_markup(reply_markup=await get_students_keyboard_uz(db, page))
+        await call.message.edit_reply_markup(reply_markup=get_students_keyboard_uz(page))
     else:
-        await call.message.edit_reply_markup(reply_markup=await get_students_keyboard_ru(db, page))
+        await call.message.edit_reply_markup(reply_markup=get_students_keyboard_ru(page))
 
 
 @dp.callback_query_handler(Text(startswith="student:"), state=SendFile.student_list)
 async def select_student(call: CallbackQuery, state: FSMContext):
+    await call.message.delete()
     student = call.data.split(":")[1]
+    await state.update_data(student=student)
     user = await db.select_user(str(call.from_user.id))
     lang_code = user['language'] if user else 'uz'
-
-    # SECURITY CHECK: Talaba faqat o'z ismini tanlay oladi
-    my_real_name = user.get('real_name') if user else None
-    if not my_real_name or my_real_name.strip().lower() != student.strip().lower():
-        if lang_code == 'uz':
-            await call.answer("❌ Bu siz emassiz! Iltimos, faqat o'z ism-familiyangizni tanlang.", show_alert=True)
-        else:
-            await call.answer("❌ Это не вы! Пожалуйста, выбирайте только своё имя.", show_alert=True)
-        return
-
-    await call.message.delete()
-    await state.update_data(student=student)
     if lang_code == 'uz':
         await call.message.answer(
             f"✅ Tanlandi: <b>{student}</b>\n\n"
@@ -89,10 +79,10 @@ async def back_student(msg: Message, state: FSMContext):
     lang_code = user['language'] if user else 'uz'
     if lang_code == 'uz':
         await msg.answer("📂 Talabalar ro'yxatidan o'zingizni tanlang 👇",
-                         reply_markup=await get_students_keyboard_uz(db, page=0))
+                         reply_markup=get_students_keyboard_uz(page=0))
     else:
         await msg.answer("📂 Выберите себя из списка студентов 👇",
-                         reply_markup=await get_students_keyboard_ru(db, page=0))
+                         reply_markup=get_students_keyboard_ru(page=0))
     await SendFile.student_list.set()
 
 
