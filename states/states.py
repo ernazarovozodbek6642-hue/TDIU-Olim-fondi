@@ -75,13 +75,6 @@ class ArizaStates(StatesGroup):
     ota_info = State()
     ona_info = State()
     aka_opa_info = State()
-    # Yangi savollar (Transkript, Passport, CV, Imtiyoz)
-    transkript = State()
-    passport_oldi = State()
-    passport_orqa = State()
-    cv = State()
-    imtiyozi = State()
-    oqish_joyi = State()
     # Motivatsion xat
     motivatsion_xat = State()
     # Tasdiqlash
