@@ -1,7 +1,7 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 
-async def build_main_kb_uz(db, registered: bool = True) -> ReplyKeyboardMarkup:
+async def build_main_kb_uz(db, registered: bool = False) -> ReplyKeyboardMarkup:
     """
     Asosiy UZ menyu — svc:* bo'limlari aktiv/nofaol holatiga qarab quriladi.
     """
@@ -39,7 +39,7 @@ async def build_main_kb_uz(db, registered: bool = True) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 
-async def build_main_kb_ru(db, registered: bool = True) -> ReplyKeyboardMarkup:
+async def build_main_kb_ru(db, registered: bool = False) -> ReplyKeyboardMarkup:
     """
     Asosiy RU menyu — svc:* bo'limlari aktiv/nofaol holatiga qarab quriladi.
     """
