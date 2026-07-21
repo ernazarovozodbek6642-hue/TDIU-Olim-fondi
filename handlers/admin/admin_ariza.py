@@ -219,19 +219,10 @@ async def ariza_tasdiqlash(call: CallbackQuery):
 
     await db.update_ariza_status(ariza_id, 'approved')
 
-    # Foydalanuvchini registered sifatida belgilash
-    await db.update_user_registration(
-        user_id=a['user_id'],
-        real_name=a['fish'],
-        phone=a['telefon'],
-        otm=a['otm'],
-        course=a['kurs']
-    )
-
     await call.message.edit_text(
         f"✅ <b>Ariza #{ariza_id} tasdiqlandi!</b>\n\n"
         f"👤 {a['fish']}\n"
-        f"Foydalanuvchi hujjat yuborish bo'limiga qo'shildi.",
+        f"Talabaga tasdiqlash xabarnomasi yuborildi.",
         parse_mode='HTML',
         reply_markup=back_to_admin_kb()
     )
@@ -246,17 +237,13 @@ async def ariza_tasdiqlash(call: CallbackQuery):
         if lang == 'uz':
             await bot.send_message(
                 a['user_id'],
-                "🎉 <b>Tabriklaymiz!</b>\n\n"
-                "Arizangiz ko'rib chiqildi va <b>tasdiqlandi</b>!\n\n"
-                "Endi «📂 Hujjat yuborish» bo'limidan foydalanishingiz mumkin.",
+                "🎉 Arizangiz tasdiqlandi. https://t.me/olimfondi kanalini kuzatib boring.",
                 parse_mode='HTML'
             )
         else:
             await bot.send_message(
                 a['user_id'],
-                "🎉 <b>Поздравляем!</b>\n\n"
-                "Ваша заявка рассмотрена и <b>одобрена</b>!\n\n"
-                "Теперь вы можете пользоваться разделом «📂 Отправить документ».",
+                "🎉 Ваша заявка одобрена. Следите за каналом https://t.me/olimfondi.",
                 parse_mode='HTML'
             )
     except Exception:

@@ -114,9 +114,9 @@ async def ariza_start(msg: Message, state: FSMContext):
             return
         elif status == 'approved':
             if lang == 'uz':
-                await msg.answer("✅ <b>Tabriklaymiz!</b> Arizangiz tasdiqlangan. Hujjat yuborish bo'limidan foydalanishingiz mumkin.", parse_mode='HTML')
+                await msg.answer("✅ Arizangiz tasdiqlangan. https://t.me/olimfondi kanalini kuzatib boring.", parse_mode='HTML')
             else:
-                await msg.answer("✅ <b>Поздравляем!</b> Ваша заявка одобрена. Вы можете пользоваться разделом отправки документов.", parse_mode='HTML')
+                await msg.answer("✅ Ваша заявка уже одобрена. Следите за каналом https://t.me/olimfondi.", parse_mode='HTML')
             return
         elif status == 'rejected':
             reason = existing.get('rejection_reason') or '—'
