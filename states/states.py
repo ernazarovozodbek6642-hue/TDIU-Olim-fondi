@@ -86,6 +86,10 @@ class AdminArizaStates(StatesGroup):
     search = State()
 
 
+class AdminSessionStates(StatesGroup):
+    new_session_name = State()
+
+
 class AdminCMSStates(StatesGroup):
     # Mavjud bo'limni tahrirlash
     edit_title_uz = State()
