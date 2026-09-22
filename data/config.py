@@ -7,16 +7,16 @@ env = Env()
 env.read_env()
 
 # .env fayl ichidan quyidagilarni o'qiymiz
-BOT_TOKEN = "8280117262:AAE6TR1cRngZqLf2mX1T_Kk9ZSi9EXbJmSk"  # Bot token
-ADMINS = ['1428562070', '-1002605246735', '5589013665']  # adminlar ro'yxati
-STORAGE_CHANNEL = '-1003658983979'  # Hujjatlar arxiv kanali
-IP = 'localhost'  # Xosting ip manzili
+BOT_TOKEN = env.str("BOT_TOKEN", default="")
+ADMINS = [item.strip() for item in env.list("ADMINS", default=[]) if item.strip()]
+STORAGE_CHANNEL = env.str("STORAGE_CHANNEL", default="")
+IP = env.str("IP", default="localhost")
 
-
-DB_HOST = 'ep-soft-shadow-adiix24b-pooler.c-2.us-east-1.aws.neon.tech'
-DB_NAME = 'neondb'
-DB_USER = 'neondb_owner'
-DB_PASS = 'npg_MjOB5CokvDF8'
+DB_HOST = env.str("DB_HOST", default="")
+DB_NAME = env.str("DB_NAME", default="")
+DB_USER = env.str("DB_USER", default="")
+# Hostinglarda ikkala nomdan biri ishlatilishi mumkin.
+DB_PASS = env.str("DB_PASS", default=env.str("DB_PASSWORD", default=""))
 
 
 # Startup validation checks for environment and dependencies

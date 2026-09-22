@@ -12,11 +12,12 @@ from datetime import datetime
 import pytz
 
 
-@dp.callback_query_handler(text='adm:events')
+@dp.callback_query_handler(text='adm:events', state='*')
 async def admin_events(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'content'):
         return
     await state.finish()
+    await call.answer()
     events = await db.get_all_events()
     if not events:
         from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton

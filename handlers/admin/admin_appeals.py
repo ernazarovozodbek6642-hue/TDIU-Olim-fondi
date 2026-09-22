@@ -9,10 +9,11 @@ from datetime import datetime
 import pytz
 
 
-@dp.callback_query_handler(text='adm:appeals')
+@dp.callback_query_handler(text='adm:appeals', state='*')
 async def admin_appeals(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'users'):
         return
+    await call.answer()
     appeals = await db.get_unanswered_appeals()
     if not appeals:
         await call.message.edit_text(

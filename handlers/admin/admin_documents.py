@@ -109,6 +109,7 @@ async def admin_docs(call: CallbackQuery, state: FSMContext):
     if not await _allowed(call.from_user.id):
         return
     await state.finish()
+    await call.answer()
     total = await db.count_documents()
     await call.message.edit_text(
         f"📂 <b>Hujjatlar boshqaruvi</b>\n\nJami: <b>{total}</b> ta",

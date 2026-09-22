@@ -27,11 +27,12 @@ async def _delete_admin_msgs(ariza_id: int, skip_chat_id: str = None):
 #  ARIZALAR BO'LIMI
 # ════════════════════════════════════════
 
-@dp.callback_query_handler(text='adm:arizalar')
+@dp.callback_query_handler(text='adm:arizalar', state='*')
 async def admin_arizalar(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
     await state.finish()
+    await call.answer()
     sessions = await db.get_all_sessions()
     rows = [[InlineKeyboardButton(
         f"{'🟢' if s['is_active'] else '⚪'} {s['name']}",

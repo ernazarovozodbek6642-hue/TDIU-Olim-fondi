@@ -147,6 +147,7 @@ async def cms_main(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'content'):
         return
     await state.finish()
+    await call.answer()
     sections = await db.get_top_sections(admin=True)
     await safe_edit(
         call,

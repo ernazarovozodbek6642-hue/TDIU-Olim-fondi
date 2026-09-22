@@ -28,6 +28,7 @@ async def back_to_admin_main(call: CallbackQuery, state: FSMContext):
     if not admin:
         return
     await state.finish()
+    await call.answer()
     total = await db.count_users()
     registered = await db.count_registered_users()
     await call.message.edit_text(

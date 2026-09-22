@@ -23,10 +23,11 @@ def user_detail_kb(user_id, registered):
     ])
 
 
-@dp.callback_query_handler(text='adm:users')
+@dp.callback_query_handler(text='adm:users', state='*')
 async def admin_users(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'users'):
         return
+    await call.answer()
     users = await db.select_all_users()
     users_cache[str(call.from_user.id)] = users
     await call.message.edit_text(

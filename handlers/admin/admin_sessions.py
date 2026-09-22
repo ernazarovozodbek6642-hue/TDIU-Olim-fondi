@@ -26,10 +26,11 @@ def session_detail_kb(session_id, is_active):
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-@dp.callback_query_handler(text='adm:sessions')
+@dp.callback_query_handler(text='adm:sessions', state='*')
 async def admin_sessions(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
+    await call.answer()
     sessions = await db.get_all_sessions()
     await call.message.edit_text(
         "📅 <b>Sessiyalar boshqaruvi</b>\n\n"

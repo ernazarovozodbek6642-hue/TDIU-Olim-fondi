@@ -7,10 +7,12 @@ from states.states import AdminBroadcastStates
 from keyboards.inline.admin_kb import broadcast_confirm_kb, back_to_admin_kb
 
 
-@dp.callback_query_handler(text='adm:broadcast')
+@dp.callback_query_handler(text='adm:broadcast', state='*')
 async def admin_broadcast(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'users'):
         return
+    await state.finish()
+    await call.answer()
     await call.message.answer("📢 Broadcast mavzusini kiriting:")
     await AdminBroadcastStates.subject.set()
 

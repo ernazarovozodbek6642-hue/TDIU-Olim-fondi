@@ -4,10 +4,11 @@ from utils.misc.admin_access import admin_allowed
 from keyboards.inline.admin_kb import back_to_admin_kb
 
 
-@dp.callback_query_handler(text='adm:stats')
+@dp.callback_query_handler(text='adm:stats', state='*')
 async def admin_stats(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id):
         return
+    await call.answer()
     total = await db.count_users()
     registered = await db.count_registered_users()
     unregistered = total - registered
