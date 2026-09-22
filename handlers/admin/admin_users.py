@@ -36,7 +36,7 @@ async def admin_users(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='usrpage:'))
+@dp.callback_query_handler(Text(startswith='usrpage:'), state='*')
 async def users_page(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'users'):
         return
@@ -45,7 +45,7 @@ async def users_page(call: CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=users_list_kb(users, page=page))
 
 
-@dp.callback_query_handler(Text(startswith='chatuser:'))
+@dp.callback_query_handler(Text(startswith='chatuser:'), state='*')
 async def show_user_details(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'users'):
         return
@@ -80,7 +80,7 @@ async def show_user_details(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='toggle_reg:'))
+@dp.callback_query_handler(Text(startswith='toggle_reg:'), state='*')
 async def toggle_registration(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'users'):
         return
@@ -139,7 +139,7 @@ async def toggle_registration(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='chat_start:'))
+@dp.callback_query_handler(Text(startswith='chat_start:'), state='*')
 async def start_chat(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'users'):
         return

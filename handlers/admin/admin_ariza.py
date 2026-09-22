@@ -45,7 +45,7 @@ async def admin_arizalar(call: CallbackQuery, state: FSMContext):
     )
 
 
-@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_sess:"))
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_sess:"), state='*')
 async def ariza_session_menu(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
@@ -63,7 +63,7 @@ async def ariza_session_menu(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_list:"))
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_list:"), state='*')
 async def arizalar_list(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
@@ -86,7 +86,7 @@ async def arizalar_list(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_page:"))
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_page:"), state='*')
 async def arizalar_page(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
@@ -102,7 +102,7 @@ async def arizalar_page(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza:") and c.data.split(":")[1].isdigit())
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza:") and c.data.split(":")[1].isdigit(), state='*')
 async def ariza_detail(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
@@ -236,7 +236,7 @@ async def ariza_detail(call: CallbackQuery):
 #  TASDIQLASH
 # ════════════════════════════════════════
 
-@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_ok:"))
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_ok:"), state='*')
 async def ariza_tasdiqlash(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
@@ -286,7 +286,7 @@ async def ariza_tasdiqlash(call: CallbackQuery):
 #  RAD ETISH
 # ════════════════════════════════════════
 
-@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_rad:"))
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith("ariza_rad:"), state='*')
 async def ariza_rad_start(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
@@ -362,7 +362,7 @@ async def ariza_rad_reason(msg: Message, state: FSMContext):
 #  QIDIRISH
 # ════════════════════════════════════════
 
-@dp.callback_query_handler(lambda c: c.data and c.data.startswith('ariza_search'))
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith('ariza_search'), state='*')
 async def ariza_search_start(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return

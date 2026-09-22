@@ -121,7 +121,7 @@ async def admin_docs(call: CallbackQuery, state: FSMContext):
     )
 
 
-@dp.callback_query_handler(text='docs:sessions')
+@dp.callback_query_handler(text='docs:sessions', state='*')
 async def choose_document_session(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -132,7 +132,7 @@ async def choose_document_session(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='docs_session:'))
+@dp.callback_query_handler(Text(startswith='docs_session:'), state='*')
 async def document_session_menu(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -144,7 +144,7 @@ async def document_session_menu(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='docs_list:'))
+@dp.callback_query_handler(Text(startswith='docs_list:'), state='*')
 async def list_documents(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -157,7 +157,7 @@ async def list_documents(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='docview:'))
+@dp.callback_query_handler(Text(startswith='docview:'), state='*')
 async def view_single_doc(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -191,7 +191,7 @@ async def view_single_doc(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='doc_ok:'))
+@dp.callback_query_handler(Text(startswith='doc_ok:'), state='*')
 async def approve_document(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -213,7 +213,7 @@ async def approve_document(call: CallbackQuery):
     await call.message.edit_text("✅ Hujjat tasdiqlandi.", reply_markup=back_to_admin_kb())
 
 
-@dp.callback_query_handler(Text(startswith='doc_reject:'))
+@dp.callback_query_handler(Text(startswith='doc_reject:'), state='*')
 async def reject_document_start(call: CallbackQuery, state: FSMContext):
     if not await _allowed(call.from_user.id):
         return
@@ -275,7 +275,7 @@ async def _send_documents_zip(call, docs, filename_label):
         )
 
 
-@dp.callback_query_handler(Text(startswith='docs_zip:'))
+@dp.callback_query_handler(Text(startswith='docs_zip:'), state='*')
 async def export_documents_zip(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -284,7 +284,7 @@ async def export_documents_zip(call: CallbackQuery):
     await _send_documents_zip(call, docs, f"{session_id}_{status}")
 
 
-@dp.callback_query_handler(Text(startswith='docs_zip_date:'))
+@dp.callback_query_handler(Text(startswith='docs_zip_date:'), state='*')
 async def export_date_filtered_documents_zip(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -307,7 +307,7 @@ async def export_date_filtered_documents_zip(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(text='docs:permissions')
+@dp.callback_query_handler(text='docs:permissions', state='*')
 async def permission_sessions(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -318,7 +318,7 @@ async def permission_sessions(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='docperm_session:'))
+@dp.callback_query_handler(Text(startswith='docperm_session:'), state='*')
 async def permission_users(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -331,7 +331,7 @@ async def permission_users(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='docperm_page:'))
+@dp.callback_query_handler(Text(startswith='docperm_page:'), state='*')
 async def permission_users_page(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -340,7 +340,7 @@ async def permission_users_page(call: CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=permission_users_kb(users, int(session_id), int(page)))
 
 
-@dp.callback_query_handler(Text(startswith='docperm_toggle:'))
+@dp.callback_query_handler(Text(startswith='docperm_toggle:'), state='*')
 async def toggle_document_permission(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
@@ -380,7 +380,7 @@ async def toggle_document_permission(call: CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=permission_users_kb(users, int(session_id), int(page)))
 
 
-@dp.callback_query_handler(Text(startswith='docperm_search:'))
+@dp.callback_query_handler(Text(startswith='docperm_search:'), state='*')
 async def permission_search_start(call: CallbackQuery, state: FSMContext):
     if not await _allowed(call.from_user.id):
         return
@@ -407,7 +407,7 @@ async def permission_search_result(msg: Message, state: FSMContext):
     )
 
 
-@dp.callback_query_handler(Text(startswith='docs_date:'))
+@dp.callback_query_handler(Text(startswith='docs_date:'), state='*')
 async def date_filter_start(call: CallbackQuery, state: FSMContext):
     if not await _allowed(call.from_user.id):
         return
@@ -417,7 +417,7 @@ async def date_filter_start(call: CallbackQuery, state: FSMContext):
     await AdminDocumentStates.date_from.set()
 
 
-@dp.callback_query_handler(Text(startswith='docs_search:'))
+@dp.callback_query_handler(Text(startswith='docs_search:'), state='*')
 async def document_search_start(call: CallbackQuery, state: FSMContext):
     if not await _allowed(call.from_user.id):
         return

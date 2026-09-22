@@ -67,7 +67,7 @@ async def admin_access_list(call: CallbackQuery, state: FSMContext):
     )
 
 
-@dp.callback_query_handler(Text(startswith='admin_access:'))
+@dp.callback_query_handler(Text(startswith='admin_access:'), state='*')
 async def admin_access_detail(call: CallbackQuery):
     if not await _superadmin(call.from_user.id):
         return
@@ -83,7 +83,7 @@ async def admin_access_detail(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(text='admin_add')
+@dp.callback_query_handler(text='admin_add', state='*')
 async def admin_add_start(call: CallbackQuery):
     if not await _superadmin(call.from_user.id):
         return
@@ -107,7 +107,7 @@ async def admin_add_save(msg: Message, state: FSMContext):
     )
 
 
-@dp.callback_query_handler(Text(startswith='admin_perm:'))
+@dp.callback_query_handler(Text(startswith='admin_perm:'), state='*')
 async def admin_permission_toggle(call: CallbackQuery):
     if not await _superadmin(call.from_user.id):
         return
@@ -127,7 +127,7 @@ async def admin_permission_toggle(call: CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=admin_detail_kb(admin))
 
 
-@dp.callback_query_handler(Text(startswith='admin_all:'))
+@dp.callback_query_handler(Text(startswith='admin_all:'), state='*')
 async def admin_all_permissions(call: CallbackQuery):
     if not await _superadmin(call.from_user.id):
         return

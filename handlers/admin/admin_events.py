@@ -33,7 +33,7 @@ async def admin_events(call: CallbackQuery, state: FSMContext):
         )
 
 
-@dp.callback_query_handler(text='event:new')
+@dp.callback_query_handler(text='event:new', state='*')
 async def new_event_name(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'content'):
         return
@@ -208,7 +208,7 @@ async def event_edit(call: CallbackQuery, state: FSMContext):
     await AdminEventStates.name.set()
 
 
-@dp.callback_query_handler(Text(startswith='ev_edit:'))
+@dp.callback_query_handler(Text(startswith='ev_edit:'), state='*')
 async def event_edit_start(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'content'):
         return
@@ -234,7 +234,7 @@ async def event_edit_start(call: CallbackQuery, state: FSMContext):
     await AdminEventStates.name.set()
 
 
-@dp.callback_query_handler(Text(startswith='ev:'))
+@dp.callback_query_handler(Text(startswith='ev:'), state='*')
 async def event_detail(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'content'):
         return
@@ -253,7 +253,7 @@ async def event_detail(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='ev_del:'))
+@dp.callback_query_handler(Text(startswith='ev_del:'), state='*')
 async def event_delete(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'content'):
         return

@@ -27,7 +27,7 @@ async def admin_appeals(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='ap:'))
+@dp.callback_query_handler(Text(startswith='ap:'), state='*')
 async def appeal_detail(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'users'):
         return
@@ -52,7 +52,7 @@ async def appeal_detail(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='ap_reply:'))
+@dp.callback_query_handler(Text(startswith='ap_reply:'), state='*')
 async def start_reply(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'users'):
         return

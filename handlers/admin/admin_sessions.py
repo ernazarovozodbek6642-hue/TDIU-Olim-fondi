@@ -41,7 +41,7 @@ async def admin_sessions(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='session_view:'))
+@dp.callback_query_handler(Text(startswith='session_view:'), state='*')
 async def view_session(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
@@ -63,7 +63,7 @@ async def view_session(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(Text(startswith='session_act:'))
+@dp.callback_query_handler(Text(startswith='session_act:'), state='*')
 async def activate_session(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
@@ -87,7 +87,7 @@ async def activate_session(call: CallbackQuery):
     )
 
 
-@dp.callback_query_handler(text='session_new')
+@dp.callback_query_handler(text='session_new', state='*')
 async def create_session_start(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
         return
