@@ -1,4 +1,5 @@
 import logging
+from aiogram.types import CallbackQuery
 from aiogram.utils.exceptions import (Unauthorized, InvalidQueryID, TelegramAPIError,
                                       CantDemoteChatCreator, MessageNotModified, MessageToDeleteNotFound,
                                       MessageTextIsEmpty, RetryAfter,
@@ -55,4 +56,14 @@ async def errors_handler(update, exception):
         logging.exception(f'CantParseEntities: {exception} \nUpdate: {update}')
         return True
     
-    logging.exception(f'Update: {update} \n{exception}')
+    logging.exception('Unhandled update error: %s', exception)
+    callback = getattr(update, 'callback_query', None)
+    if isinstance(callback, CallbackQuery):
+        try:
+            await callback.answer(
+                "Bo'limni ochishda xatolik yuz berdi. /admin orqali qayta urinib ko'ring.",
+                show_alert=True,
+            )
+        except Exception:
+            pass
+    return True

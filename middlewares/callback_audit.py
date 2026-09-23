@@ -8,6 +8,12 @@ from aiogram.dispatcher.middlewares import BaseMiddleware
 class CallbackAuditMiddleware(BaseMiddleware):
     """Qaysi callback handler tanlanganini shaxsiy ma'lumotsiz log qiladi."""
 
+    async def on_pre_process_callback_query(
+        self, callback_query: types.CallbackQuery, data: dict
+    ):
+        # Handler topilmasa ham callback Telegramdan yetib kelganini ko'rsatadi.
+        logging.info("CALLBACK_RECEIVED")
+
     async def on_process_callback_query(
         self, callback_query: types.CallbackQuery, data: dict
     ):

@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from aiogram import executor
@@ -13,6 +14,12 @@ from utils.misc.scheduler import scheduler, reschedule_pending_events
 
 
 async def on_startup(dispatcher):
+    # Bot faqat long polling rejimida ishlaydi. Avvalgi deploy yoki tashqi
+    # servis qoldirgan webhook barcha update/callbacklarni to'sib qo'ymasligi
+    # uchun uni startupda ochiq tarzda olib tashlaymiz.
+    await dispatcher.bot.delete_webhook(drop_pending_updates=False)
+    logging.info("Telegram webhook cleared; polling mode enabled")
+
     await db.create()
     await set_default_commands(dispatcher)
     await db.create_table_users()
@@ -40,4 +47,9 @@ async def on_startup(dispatcher):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, on_startup=on_startup)
+    executor.start_polling(
+        dp,
+        on_startup=on_startup,
+        reset_webhook=True,
+        skip_updates=False,
+    )
