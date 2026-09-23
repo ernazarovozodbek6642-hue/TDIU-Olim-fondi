@@ -29,6 +29,7 @@ def session_detail_kb(session_id, is_active):
 @dp.callback_query_handler(text='adm:sessions', state='*')
 async def admin_sessions(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'applications'):
+        await call.answer("Sessiyalar bo‘limi uchun ruxsat yo‘q", show_alert=True)
         return
     await call.answer()
     sessions = await db.get_all_sessions()

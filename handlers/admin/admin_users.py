@@ -26,6 +26,7 @@ def user_detail_kb(user_id, registered):
 @dp.callback_query_handler(text='adm:users', state='*')
 async def admin_users(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'users'):
+        await call.answer("Foydalanuvchilar bo‘limi uchun ruxsat yo‘q", show_alert=True)
         return
     await call.answer()
     users = await db.select_all_users()

@@ -107,6 +107,7 @@ def permission_users_kb(users, session_id, page=0):
 @dp.callback_query_handler(text='adm:docs', state='*')
 async def admin_docs(call: CallbackQuery, state: FSMContext):
     if not await _allowed(call.from_user.id):
+        await call.answer("Hujjatlar bo‘limi uchun ruxsat yo‘q", show_alert=True)
         return
     await state.finish()
     await call.answer()

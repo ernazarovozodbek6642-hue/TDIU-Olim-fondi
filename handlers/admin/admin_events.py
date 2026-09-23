@@ -15,6 +15,7 @@ import pytz
 @dp.callback_query_handler(text='adm:events', state='*')
 async def admin_events(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'content'):
+        await call.answer("Tadbirlar bo‘limi uchun ruxsat yo‘q", show_alert=True)
         return
     await state.finish()
     await call.answer()

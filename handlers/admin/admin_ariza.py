@@ -30,6 +30,7 @@ async def _delete_admin_msgs(ariza_id: int, skip_chat_id: str = None):
 @dp.callback_query_handler(text='adm:arizalar', state='*')
 async def admin_arizalar(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'applications'):
+        await call.answer("Arizalar bo‘limi uchun ruxsat yo‘q", show_alert=True)
         return
     await state.finish()
     await call.answer()

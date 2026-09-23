@@ -145,6 +145,7 @@ async def safe_edit(call: CallbackQuery, text: str, **kwargs):
 @dp.callback_query_handler(lambda c: c.data == "cms:main", state='*')
 async def cms_main(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'content'):
+        await call.answer("Kontent bo‘limi uchun ruxsat yo‘q", show_alert=True)
         return
     await state.finish()
     await call.answer()

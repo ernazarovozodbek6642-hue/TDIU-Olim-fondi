@@ -7,6 +7,7 @@ from keyboards.inline.admin_kb import back_to_admin_kb
 @dp.callback_query_handler(text='adm:stats', state='*')
 async def admin_stats(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id):
+        await call.answer("Admin ruxsati topilmadi", show_alert=True)
         return
     await call.answer()
     total = await db.count_users()

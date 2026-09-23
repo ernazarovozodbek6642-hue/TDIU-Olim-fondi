@@ -12,6 +12,7 @@ import pytz
 @dp.callback_query_handler(text='adm:appeals', state='*')
 async def admin_appeals(call: CallbackQuery):
     if not await admin_allowed(call.from_user.id, 'users'):
+        await call.answer("Murojaatlarni ko‘rish uchun ruxsat yo‘q", show_alert=True)
         return
     await call.answer()
     appeals = await db.get_unanswered_appeals()

@@ -10,11 +10,12 @@ from keyboards.inline.admin_kb import broadcast_confirm_kb, back_to_admin_kb
 @dp.callback_query_handler(text='adm:broadcast', state='*')
 async def admin_broadcast(call: CallbackQuery, state: FSMContext):
     if not await admin_allowed(call.from_user.id, 'users'):
+        await call.answer("Broadcast uchun ruxsat yo‘q", show_alert=True)
         return
     await state.finish()
     await call.answer()
     await call.message.answer("📢 Broadcast mavzusini kiriting:")
-    await AdminBroadcastStates.subject.set()
+    await state.set_state(AdminBroadcastStates.subject.state)
 
 
 @dp.message_handler(state=AdminBroadcastStates.subject)
@@ -23,7 +24,7 @@ async def broadcast_subject(msg: Message, state: FSMContext):
         return
     await state.update_data(subject=msg.text)
     await msg.answer("💬 Xabar matnini kiriting:")
-    await AdminBroadcastStates.text.set()
+    await state.set_state(AdminBroadcastStates.text.state)
 
 
 @dp.message_handler(state=AdminBroadcastStates.text)
@@ -41,7 +42,7 @@ async def broadcast_text(msg: Message, state: FSMContext):
         f"👥 Qabul qiluvchilar: <b>{total} ta</b> (ro'yxatdan o'tganlar)",
         reply_markup=broadcast_confirm_kb(), parse_mode='HTML'
     )
-    await AdminBroadcastStates.confirm.set()
+    await state.set_state(AdminBroadcastStates.confirm.state)
 
 
 @dp.callback_query_handler(text='bc:send', state=AdminBroadcastStates.confirm)
@@ -77,8 +78,9 @@ async def broadcast_send(call: CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(text='bc:edit', state=AdminBroadcastStates.confirm)
 async def broadcast_edit(call: CallbackQuery, state: FSMContext):
+    await call.answer()
     await call.message.answer("💬 Xabar matnini qayta kiriting:")
-    await AdminBroadcastStates.text.set()
+    await state.set_state(AdminBroadcastStates.text.state)
 
 
 @dp.callback_query_handler(text='bc:cancel', state=AdminBroadcastStates.confirm)

@@ -60,6 +60,7 @@ async def admin_access_list(call: CallbackQuery, state: FSMContext):
         await call.answer("Faqat superadmin uchun", show_alert=True)
         return
     await state.finish()
+    await call.answer()
     admins = await db.get_all_admins()
     await call.message.edit_text(
         "🛡 <b>Adminlar va huquqlar</b>\n\nAdminni tanlang:",
