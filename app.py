@@ -52,4 +52,13 @@ if __name__ == '__main__':
         on_startup=on_startup,
         reset_webhook=True,
         skip_updates=False,
+        # Telegram avvalgi webhook/getUpdates sozlamasini eslab qoladi.
+        # callback_query ochiq ko'rsatilmasa inline tugmalar umuman kelmaydi.
+        allowed_updates=[
+            "message",
+            "edited_message",
+            "channel_post",
+            "edited_channel_post",
+            "callback_query",
+        ],
     )

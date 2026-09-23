@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 from environs import Env
 
 # environs kutubxonasidan foydalanish
@@ -8,7 +9,27 @@ env.read_env()
 
 # .env fayl ichidan quyidagilarni o'qiymiz
 BOT_TOKEN = env.str("BOT_TOKEN", default="")
-ADMINS = [item.strip() for item in env.list("ADMINS", default=[]) if item.strip()]
+
+
+def _parse_admins(raw_value: str):
+    """ADMINS uchun JSON array va oddiy vergulli formatni qo'llab-quvvatlaydi."""
+    raw_value = (raw_value or "").strip()
+    if not raw_value:
+        return []
+    try:
+        parsed = json.loads(raw_value)
+        if isinstance(parsed, list):
+            return [str(item).strip() for item in parsed if str(item).strip()]
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return [
+        item.strip().strip("[]\"'")
+        for item in raw_value.split(",")
+        if item.strip().strip("[]\"'")
+    ]
+
+
+ADMINS = _parse_admins(os.getenv("ADMINS", ""))
 STORAGE_CHANNEL = env.str("STORAGE_CHANNEL", default="")
 IP = env.str("IP", default="localhost")
 
