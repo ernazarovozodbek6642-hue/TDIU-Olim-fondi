@@ -105,6 +105,12 @@ class AdminDocumentStates(StatesGroup):
     date_to = State()
 
 
+class AdminDocumentPermissionStates(StatesGroup):
+    telegram_id = State()
+    first_name = State()
+    last_name = State()
+
+
 class AdminAccessStates(StatesGroup):
     search_student = State()
     add_admin = State()

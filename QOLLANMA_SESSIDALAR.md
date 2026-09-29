@@ -30,11 +30,13 @@ Ushbu qo'llanma botga qo'shilgan yangi **Sessiyalar (Kampaniyalar)** va **Xavfsi
 
 *   **Maqsad:** Talabaga bir yoki bir nechta sessiya uchun hujjat yuborish ruxsatini berish.
 *   **Yo'riqnoma:**
-    1. Admin panelda **«📂 Hujjatlar» → «🔐 Talabalarga ruxsat»** bo'limiga kiring.
+    1. Admin panelda **«📂 Hujjatlar» → «✅ Hujjatga tasdiqlash»** bo'limiga kiring.
     2. Faol yoki nofaol bo'lishidan qat'i nazar kerakli sessiyani tanlang.
-    3. Talabani ro'yxatdan yoki F.I.Sh./Telegram ID orqali qidirib toping.
-    4. Talabani bosib ruxsat bering; qayta bosish ruxsatni olib tashlaydi.
-    5. Ruxsat o'zgarganda talabaning asosiy menyusi avtomatik yangilanadi.
+    3. Sessiya ichida faqat shu sessiyaga ruxsat berilgan talabalar ko'rsatiladi.
+    4. **«➕ Telegram ID orqali ruxsat berish»** tugmasini bosing va talabaning Telegram ID raqamini yuboring.
+    5. Talaba bot bazasida bo'lsa, ruxsat darhol beriladi va talabaga xabar yuboriladi.
+    6. Talaba bazada bo'lmasa, bot admindan uning ismi va familiyasini so'raydi, so'ng foydalanuvchini yaratib ruxsat beradi.
+    7. Ruxsatni bekor qilish uchun ro'yxatdagi talaba tugmasini bosing va amalni tasdiqlang.
 
 ---
 

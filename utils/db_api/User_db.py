@@ -112,6 +112,25 @@ class Database:
         sql = "SELECT * FROM users WHERE id = $1"
         return await self.execute(sql, user_id, fetchrow=True)
 
+    async def create_user_by_admin(self, user_id: str, first_name: str, last_name: str):
+        full_name = f"{first_name.strip()} {last_name.strip()}".strip()
+        return await self.execute("""
+            INSERT INTO users (
+                id, full_name, username, date_time, language, real_name, registered
+            )
+            VALUES ($1, $2, NULL, CURRENT_TIMESTAMP, 'uz', $2, FALSE)
+            ON CONFLICT (id) DO UPDATE SET
+                full_name = CASE
+                    WHEN users.full_name IS NULL OR users.full_name = '' THEN EXCLUDED.full_name
+                    ELSE users.full_name
+                END,
+                real_name = CASE
+                    WHEN users.real_name IS NULL OR users.real_name = '' THEN EXCLUDED.real_name
+                    ELSE users.real_name
+                END
+            RETURNING *
+        """, str(user_id), full_name, fetchrow=True)
+
     async def select_all_users(self):
         sql = "SELECT * FROM users ORDER BY date_time DESC"
         return await self.execute(sql, fetch=True)
@@ -272,28 +291,12 @@ class Database:
     async def get_document_permission_users(self, session_id: int):
         return await self.execute("""
             SELECT u.id, u.real_name, u.full_name, u.username,
-                   COALESCE(p.is_allowed, FALSE) AS is_allowed
-            FROM users u
-            LEFT JOIN document_permissions p
-              ON p.user_id=u.id AND p.session_id=$1
-            WHERE u.registered=TRUE
-            ORDER BY COALESCE(u.real_name, u.full_name)
+                   p.is_allowed, p.granted_by, p.created_at
+            FROM document_permissions p
+            JOIN users u ON u.id=p.user_id
+            WHERE p.session_id=$1 AND p.is_allowed=TRUE
+            ORDER BY p.created_at DESC, COALESCE(u.real_name, u.full_name)
         """, session_id, fetch=True)
-
-    async def search_document_permission_users(self, session_id: int, query: str):
-        return await self.execute("""
-            SELECT u.id, u.real_name, u.full_name, u.username,
-                   COALESCE(p.is_allowed, FALSE) AS is_allowed
-            FROM users u
-            LEFT JOIN document_permissions p
-              ON p.user_id=u.id AND p.session_id=$1
-            WHERE u.registered=TRUE AND (
-                COALESCE(u.real_name, '') ILIKE $2 OR
-                COALESCE(u.full_name, '') ILIKE $2 OR
-                u.id ILIKE $2
-            )
-            ORDER BY COALESCE(u.real_name, u.full_name)
-        """, session_id, f"%{query}%", fetch=True)
 
     # ─── APPEALS ───
     async def create_table_appeals(self):

@@ -1,6 +1,7 @@
 import io
 import zipfile
 from datetime import datetime, timedelta
+from html import escape
 
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
@@ -10,7 +11,7 @@ from data.config import STORAGE_CHANNEL
 from keyboards.default.Student_DB import build_main_kb_uz, build_main_kb_ru
 from keyboards.inline.admin_kb import back_to_admin_kb
 from loader import dp, db, bot
-from states.states import AdminDocumentStates, AdminAccessStates
+from states.states import AdminDocumentStates, AdminDocumentPermissionStates
 
 
 PER_PAGE = 10
@@ -89,19 +90,76 @@ def permission_users_kb(users, session_id, page=0):
     for user in users[page * PER_PAGE:(page + 1) * PER_PAGE]:
         name = user.get('real_name') or user.get('full_name') or user['id']
         rows.append([InlineKeyboardButton(
-            f"{'✅' if user['is_allowed'] else '🚫'} {name}",
-            callback_data=f"docperm_toggle:{session_id}:{user['id']}:{page}"
+            f"❌ {name} · {user['id']}",
+            callback_data=f"docperm_revoke:{session_id}:{user['id']}:{page}"
         )])
-    nav = []
-    if page > 0:
-        nav.append(InlineKeyboardButton("⬅️", callback_data=f"docperm_page:{session_id}:{page-1}"))
-    nav.append(InlineKeyboardButton(f"{page+1}/{total_pages}", callback_data="noop"))
-    if page + 1 < total_pages:
-        nav.append(InlineKeyboardButton("➡️", callback_data=f"docperm_page:{session_id}:{page+1}"))
-    rows.append(nav)
-    rows.append([InlineKeyboardButton("🔍 Talabani qidirish", callback_data=f"docperm_search:{session_id}")])
+    if users:
+        nav = []
+        if page > 0:
+            nav.append(InlineKeyboardButton("⬅️", callback_data=f"docperm_page:{session_id}:{page-1}"))
+        nav.append(InlineKeyboardButton(f"{page+1}/{total_pages}", callback_data="noop"))
+        if page + 1 < total_pages:
+            nav.append(InlineKeyboardButton("➡️", callback_data=f"docperm_page:{session_id}:{page+1}"))
+        rows.append(nav)
+    rows.append([InlineKeyboardButton("➕ Telegram ID orqali ruxsat berish", callback_data=f"docperm_add:{session_id}")])
     rows.append([InlineKeyboardButton("⬅️ Sessiyalar", callback_data="docs:permissions")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def revoke_permission_kb(session_id, user_id, page):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                "✅ Ha, olib tashlash",
+                callback_data=f"docperm_revoke_yes:{session_id}:{user_id}:{page}"
+            )
+        ],
+        [InlineKeyboardButton("⬅️ Bekor qilish", callback_data=f"docperm_session:{session_id}")],
+    ])
+
+
+async def _notify_document_permission(user, session, is_allowed):
+    if not user:
+        return False
+    user_id = str(user['id'])
+    lang = user.get('language') or 'uz'
+    kb = await (
+        build_main_kb_uz(db, user.get('registered', False), user_id)
+        if lang == 'uz' else
+        build_main_kb_ru(db, user.get('registered', False), user_id)
+    )
+    if is_allowed:
+        text = (
+            f"✅ Sizga <b>{escape(str(session['name']))}</b> sessiyasi uchun hujjat yuborish ruxsati berildi."
+            if lang == 'uz' else
+            f"✅ Вам разрешена отправка документов для сессии <b>{escape(str(session['name']))}</b>."
+        )
+    else:
+        text = (
+            f"🚫 <b>{escape(str(session['name']))}</b> sessiyasi uchun hujjat yuborish ruxsatingiz olib tashlandi."
+            if lang == 'uz' else
+            f"🚫 Разрешение на отправку документов для сессии <b>{escape(str(session['name']))}</b> отозвано."
+        )
+    try:
+        await bot.send_message(user_id, text, reply_markup=kb, parse_mode='HTML')
+        return True
+    except Exception:
+        return False
+
+
+async def _send_permission_list(message, session_id, prefix=""):
+    session = await db.get_session_by_id(session_id)
+    users = await db.get_document_permission_users(session_id)
+    if not session:
+        await message.answer("❌ Sessiya topilmadi.", reply_markup=back_to_admin_kb())
+        return
+    empty_text = "Hozircha bu sessiyaga hech kimga ruxsat berilmagan."
+    body = f"Ruxsat berilganlar: <b>{len(users)}</b> ta" if users else empty_text
+    await message.answer(
+        f"{prefix}🔐 <b>{escape(str(session['name']))}</b>\n\n{body}",
+        reply_markup=permission_users_kb(users, session_id),
+        parse_mode='HTML'
+    )
 
 
 @dp.callback_query_handler(text='adm:docs', state='*')
@@ -116,7 +174,7 @@ async def admin_docs(call: CallbackQuery, state: FSMContext):
         f"📂 <b>Hujjatlar boshqaruvi</b>\n\nJami: <b>{total}</b> ta",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton("📂 Hujjatlarni ko‘rish", callback_data="docs:sessions")],
-            [InlineKeyboardButton("🔐 Talabalarga ruxsat", callback_data="docs:permissions")],
+            [InlineKeyboardButton("✅ Hujjatga tasdiqlash", callback_data="docs:permissions")],
             [InlineKeyboardButton("⬅️ Ortga", callback_data="adm:main")],
         ]), parse_mode='HTML'
     )
@@ -309,25 +367,39 @@ async def export_date_filtered_documents_zip(call: CallbackQuery):
 
 
 @dp.callback_query_handler(text='docs:permissions', state='*')
-async def permission_sessions(call: CallbackQuery):
+async def permission_sessions(call: CallbackQuery, state: FSMContext):
     if not await _allowed(call.from_user.id):
         return
+    await state.finish()
+    await call.answer()
     sessions = await db.get_all_sessions()
     await call.message.edit_text(
-        "🔐 Ruxsat berish uchun sessiyani tanlang. Faol va nofaol sessiyalarning barchasi ko‘rsatiladi:",
+        "✅ <b>Hujjatga tasdiqlash</b>\n\nRuxsatlarni boshqarish uchun sessiyani tanlang:",
+        parse_mode='HTML',
         reply_markup=sessions_kb(sessions, 'docperm_session')
     )
 
 
 @dp.callback_query_handler(Text(startswith='docperm_session:'), state='*')
-async def permission_users(call: CallbackQuery):
+async def permission_users(call: CallbackQuery, state: FSMContext):
     if not await _allowed(call.from_user.id):
         return
+    await state.finish()
+    await call.answer()
     session_id = int(call.data.split(':')[1])
     users = await db.get_document_permission_users(session_id)
     session = await db.get_session_by_id(session_id)
+    if not session:
+        await call.message.edit_text("❌ Sessiya topilmadi.", reply_markup=back_to_admin_kb())
+        return
+    body = (
+        f"Ruxsat berilganlar: <b>{len(users)}</b> ta\n\n"
+        "Ruxsatni bekor qilish uchun talabaning tugmasini bosing."
+        if users else
+        "Hozircha bu sessiyaga hech kimga ruxsat berilmagan."
+    )
     await call.message.edit_text(
-        f"🔐 <b>{session['name']}</b>\n\nTalabani bosing — ruxsat beriladi yoki olib tashlanadi:",
+        f"🔐 <b>{escape(str(session['name']))}</b>\n\n{body}",
         reply_markup=permission_users_kb(users, session_id), parse_mode='HTML'
     )
 
@@ -336,75 +408,147 @@ async def permission_users(call: CallbackQuery):
 async def permission_users_page(call: CallbackQuery):
     if not await _allowed(call.from_user.id):
         return
+    await call.answer()
     _, session_id, page = call.data.split(':')
     users = await db.get_document_permission_users(int(session_id))
     await call.message.edit_reply_markup(reply_markup=permission_users_kb(users, int(session_id), int(page)))
 
 
-@dp.callback_query_handler(Text(startswith='docperm_toggle:'), state='*')
-async def toggle_document_permission(call: CallbackQuery):
-    if not await _allowed(call.from_user.id):
-        return
-    _, session_id, user_id, page = call.data.split(':')
-    users = await db.get_document_permission_users(int(session_id))
-    target = next((u for u in users if str(u['id']) == user_id), None)
-    if not target:
-        await call.answer("Talaba topilmadi", show_alert=True)
-        return
-    new_value = not bool(target['is_allowed'])
-    await db.set_document_permission(user_id, int(session_id), new_value, str(call.from_user.id))
-    await call.answer("✅ Ruxsat berildi" if new_value else "🚫 Ruxsat olib tashlandi")
-    target_user = await db.select_user(user_id)
-    session = await db.get_session_by_id(int(session_id))
-    if target_user:
-        lang = target_user.get('language', 'uz')
-        kb = await (
-            build_main_kb_uz(db, target_user.get('registered', False), user_id)
-            if lang == 'uz' else
-            build_main_kb_ru(db, target_user.get('registered', False), user_id)
-        )
-        try:
-            await bot.send_message(
-                user_id,
-                (f"✅ Sizga <b>{session['name']}</b> sessiyasi uchun hujjat yuborish ruxsati berildi."
-                 if new_value and lang == 'uz' else
-                 f"✅ Вам разрешена отправка документов для сессии <b>{session['name']}</b>."
-                 if new_value else
-                 f"🚫 <b>{session['name']}</b> sessiyasi uchun hujjat yuborish ruxsatingiz olib tashlandi."
-                 if lang == 'uz' else
-                 f"🚫 Разрешение на отправку документов для сессии <b>{session['name']}</b> отозвано."),
-                reply_markup=kb, parse_mode='HTML'
-            )
-        except Exception:
-            pass
-    users = await db.get_document_permission_users(int(session_id))
-    await call.message.edit_reply_markup(reply_markup=permission_users_kb(users, int(session_id), int(page)))
-
-
-@dp.callback_query_handler(Text(startswith='docperm_search:'), state='*')
-async def permission_search_start(call: CallbackQuery, state: FSMContext):
+@dp.callback_query_handler(Text(startswith='docperm_add:'), state='*')
+async def add_document_permission_start(call: CallbackQuery, state: FSMContext):
     if not await _allowed(call.from_user.id):
         return
     session_id = int(call.data.split(':')[1])
-    await state.update_data(permission_search_session=session_id)
-    await call.message.answer("🔍 Talabaning F.I.Sh. yoki Telegram ID raqamini kiriting:")
-    await AdminAccessStates.search_student.set()
+    session = await db.get_session_by_id(session_id)
+    if not session:
+        await call.answer("Sessiya topilmadi", show_alert=True)
+        return
+    await call.answer()
+    await state.finish()
+    await state.update_data(permission_session_id=session_id)
+    await call.message.answer(
+        f"🆔 <b>{escape(str(session['name']))}</b> sessiyasi uchun talabaning Telegram ID raqamini yuboring:\n\n"
+        "Masalan: <code>123456789</code>",
+        parse_mode='HTML'
+    )
+    await AdminDocumentPermissionStates.telegram_id.set()
 
 
-@dp.message_handler(state=AdminAccessStates.search_student)
-async def permission_search_result(msg: Message, state: FSMContext):
+@dp.message_handler(state=AdminDocumentPermissionStates.telegram_id)
+async def add_document_permission_id(msg: Message, state: FSMContext):
     if not await _allowed(msg.from_user.id):
         return
-    data = await state.get_data()
-    await state.finish()
-    session_id = data['permission_search_session']
-    users = await db.search_document_permission_users(session_id, msg.text.strip())
-    if not users:
-        await msg.answer("❌ Talaba topilmadi.", reply_markup=back_to_admin_kb())
+    user_id = (msg.text or '').strip()
+    if not user_id.isdigit():
+        await msg.answer("❌ Telegram ID faqat raqamlardan iborat bo‘lishi kerak. Qayta yuboring:")
         return
+    data = await state.get_data()
+    session_id = data.get('permission_session_id')
+    session = await db.get_session_by_id(session_id)
+    if not session:
+        await state.finish()
+        await msg.answer("❌ Sessiya topilmadi.", reply_markup=back_to_admin_kb())
+        return
+    if await db.has_document_permission(user_id, session_id):
+        await state.finish()
+        await _send_permission_list(
+            msg, session_id,
+            prefix="ℹ️ Bu foydalanuvchiga avval ruxsat berilgan.\n\n"
+        )
+        return
+    user = await db.select_user(user_id)
+    if user:
+        await db.set_document_permission(user_id, session_id, True, str(msg.from_user.id))
+        notified = await _notify_document_permission(user, session, True)
+        await state.finish()
+        notice = "📨 Talabaga xabar yuborildi.\n\n" if notified else "⚠️ Ruxsat berildi, lekin talabaga xabar yetkazilmadi.\n\n"
+        await _send_permission_list(msg, session_id, prefix=f"✅ Ruxsat berildi.\n{notice}")
+        return
+    await state.update_data(permission_user_id=user_id)
     await msg.answer(
-        f"🔍 {len(users)} ta natija:",
-        reply_markup=permission_users_kb(users, session_id)
+        "ℹ️ Bu ID egasi bot bazasida topilmadi.\n\nTalabaning <b>ismini</b> kiriting:",
+        parse_mode='HTML'
+    )
+    await AdminDocumentPermissionStates.first_name.set()
+
+
+@dp.message_handler(state=AdminDocumentPermissionStates.first_name)
+async def add_document_permission_first_name(msg: Message, state: FSMContext):
+    if not await _allowed(msg.from_user.id):
+        return
+    first_name = (msg.text or '').strip()
+    if len(first_name) < 2 or len(first_name) > 100:
+        await msg.answer("❌ Ism 2–100 ta belgidan iborat bo‘lishi kerak. Qayta kiriting:")
+        return
+    await state.update_data(permission_first_name=first_name)
+    await msg.answer("Talabaning <b>familiyasini</b> kiriting:", parse_mode='HTML')
+    await AdminDocumentPermissionStates.last_name.set()
+
+
+@dp.message_handler(state=AdminDocumentPermissionStates.last_name)
+async def add_document_permission_last_name(msg: Message, state: FSMContext):
+    if not await _allowed(msg.from_user.id):
+        return
+    last_name = (msg.text or '').strip()
+    if len(last_name) < 2 or len(last_name) > 100:
+        await msg.answer("❌ Familiya 2–100 ta belgidan iborat bo‘lishi kerak. Qayta kiriting:")
+        return
+    data = await state.get_data()
+    session_id = data.get('permission_session_id')
+    user_id = data.get('permission_user_id')
+    first_name = data.get('permission_first_name')
+    session = await db.get_session_by_id(session_id)
+    if not session or not user_id or not first_name:
+        await state.finish()
+        await msg.answer("❌ Ma’lumotlar saqlanmadi. Jarayonni qaytadan boshlang.", reply_markup=back_to_admin_kb())
+        return
+    await db.create_user_by_admin(user_id, first_name, last_name)
+    await db.set_document_permission(user_id, session_id, True, str(msg.from_user.id))
+    await state.finish()
+    await _send_permission_list(
+        msg,
+        session_id,
+        prefix=(
+            f"✅ <b>{escape(first_name)} {escape(last_name)}</b> bazaga qo‘shildi va ruxsat berildi.\n"
+            "Talaba botga kirganda hujjat yuborish tugmasini ko‘radi.\n\n"
+        )
+    )
+
+
+@dp.callback_query_handler(Text(startswith='docperm_revoke:'), state='*')
+async def revoke_document_permission_confirm(call: CallbackQuery):
+    if not await _allowed(call.from_user.id):
+        return
+    await call.answer()
+    _, session_id, user_id, page = call.data.split(':')
+    user = await db.select_user(user_id)
+    name = (user.get('real_name') or user.get('full_name') or user_id) if user else user_id
+    await call.message.edit_text(
+        f"⚠️ <b>{escape(str(name))}</b> ({user_id}) uchun hujjat yuborish ruxsatini olib tashlaysizmi?",
+        reply_markup=revoke_permission_kb(int(session_id), user_id, int(page)),
+        parse_mode='HTML'
+    )
+
+
+@dp.callback_query_handler(Text(startswith='docperm_revoke_yes:'), state='*')
+async def revoke_document_permission(call: CallbackQuery):
+    if not await _allowed(call.from_user.id):
+        return
+    _, session_id, user_id, page = call.data.split(':')
+    session_id = int(session_id)
+    session = await db.get_session_by_id(session_id)
+    user = await db.select_user(user_id)
+    await db.set_document_permission(user_id, session_id, False, str(call.from_user.id))
+    notified = await _notify_document_permission(user, session, False) if session else False
+    await call.answer("🚫 Ruxsat olib tashlandi")
+    users = await db.get_document_permission_users(session_id)
+    suffix = " Talabaga xabar yuborildi." if notified else ""
+    await call.message.edit_text(
+        f"🚫 Ruxsat olib tashlandi.{suffix}\n\n"
+        f"🔐 <b>{escape(str(session['name'])) if session else 'Sessiya'}</b>\n\n"
+        f"Ruxsat berilganlar: <b>{len(users)}</b> ta",
+        reply_markup=permission_users_kb(users, session_id, int(page)),
+        parse_mode='HTML'
     )
 
 
